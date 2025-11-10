@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>保存数据到LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a2540;
+            color: white;
+            text-align: center;
+        }
+        .success {
+            color: #4ade80;
+            font-size: 24px;
+            margin: 30px 0;
+        }
+        button {
+            background: #00a4e4;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 20px;
+        }
+        button:hover {
+            background: #0090cc;
+        }
+        .info {
+            background: rgba(0, 164, 228, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 修复LocalStorage数据</h1>
+    
+    <div class="info">
+        <h3>这个页面会做什么：</h3>
+        <ul>
+            <li>✅ 将你的6个文章模块数据保存到localStorage</li>
+            <li>✅ 将焦点新闻数据保存到localStorage</li>
+            <li>✅ 确保刷新页面后数据不会丢失</li>
+        </ul>
+    </div>
+
+    <button onclick="saveData()">💾 点击保存数据</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function saveData() {
+            try {
+                // 6个特色文章数据
+                const featuredArticles = [
+                    {
+                        id: 'news-insights',
+                        image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800',
+                        date: {
+                            'zh-CN': '2025年5月11日',
+                            'zh-TW': '2025年5月11日',
+                            'en': 'May 11, 2025'
+                        },
+                        title: {
+                            'zh-CN': '特朗普和习近平同意一年贸易休战',
+                            'zh-TW': '特朗普和習近平同意一年貿易休戰',
+                            'en': 'Trump and Xi agree to a one-year trade truce'
+                        },
+                        description: {
+                            'zh-CN': '北京承诺购买大豆、延迟稀土出口管制并遏制芬太尼——但美国让步的问题仍然存在。',
+                            'zh-TW': '北京承諾購買大豆、延遲稀土出口管制並遏制芬太尼——但美國讓步的問題仍然存在。',
+                            'en': 'Beijing is pledging to buy soybeans, delay rare-earth export controls and curb fentanyl.'
+                        },
+                        link: 'news-insights'
+                    },
+                    {
+                        id: 'genius-act',
+                        image: 'https://images.unsplash.com/photo-1560221328-12fe60f83ab8?w=800',
+                        date: {
+                            'zh-CN': '2025年7月18日',
+                            'zh-TW': '2025年7月18日',
+                            'en': 'July 18, 2025'
+                        },
+                        title: {
+                            'zh-CN': '特朗普总统签署GENIUS法案',
+                            'zh-TW': '特朗普總統簽署GENIUS法案',
+                            'en': 'President Trump Signs GENIUS Act'
+                        },
+                        description: {
+                            'zh-CN': '这是一项历史性的立法，将为美国引领全球数字货币革命铺平道路。',
+                            'zh-TW': '這是一項歷史性的立法，將為美國引領全球數字貨幣革命鋪平道路。',
+                            'en': 'A historic piece of legislation that will pave the way for the United States to lead the global digital currency revolution.'
+                        },
+                        link: 'genius-act'
+                    },
+                    {
+                        id: 'ai-hallucination',
+                        image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800',
+                        date: {
+                            'zh-CN': '2025年',
+                            'zh-TW': '2025年',
+                            'en': '2025'
+                        },
+                        title: {
+                            'zh-CN': 'OpenAI：AI模型产生"幻觉"',
+                            'zh-TW': 'OpenAI：AI模型產生"幻覺"',
+                            'en': 'OpenAI: AI Model "Hallucinations"'
+                        },
+                        description: {
+                            'zh-CN': 'AI模型的"幻觉"问题源于训练机制的系统性缺陷，是当前LLM核心架构的"必然副产品"。',
+                            'zh-TW': 'AI模型的"幻覺"問題源於訓練機制的系統性缺陷，是當前LLM核心架構的"必然副產品"。',
+                            'en': 'AI model "hallucinations" stem from systematic flaws in training mechanisms.'
+                        },
+                        link: 'ai-hallucination'
+                    },
+                    {
+                        id: 'state-of-crypto-2025',
+                        image: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800',
+                        date: {
+                            'zh-CN': '2025年10月23日',
+                            'zh-TW': '2025年10月23日',
+                            'en': 'October 23, 2025'
+                        },
+                        title: {
+                            'zh-CN': 'State of Crypto 2025',
+                            'zh-TW': 'State of Crypto 2025',
+                            'en': 'State of Crypto 2025'
+                        },
+                        description: {
+                            'zh-CN': '稳定币、机构采用与AI的融合，2025年加密货币行业状态报告。',
+                            'zh-TW': '穩定幣、機構採用與AI的融合，2025年加密貨幣行業狀態報告。',
+                            'en': 'Stablecoins, institutional adoption, and AI convergence in the 2025 crypto industry report.'
+                        },
+                        link: 'state-of-crypto-2025'
+                    },
+                    {
+                        id: 'manus-ai',
+                        image: 'https://images.unsplash.com/photo-1655720828018-edd2daec9349?w=800',
+                        date: {
+                            'zh-CN': '2025年3月12日',
+                            'zh-TW': '2025年3月12日',
+                            'en': 'March 12, 2025'
+                        },
+                        title: {
+                            'zh-CN': 'Manus AI分析报告',
+                            'zh-TW': 'Manus AI分析報告',
+                            'en': 'Manus AI Analysis Report'
+                        },
+                        description: {
+                            'zh-CN': 'Manus AI的能力、局限性与市场定位深度分析报告。',
+                            'zh-TW': 'Manus AI的能力、局限性與市場定位深度分析報告。',
+                            'en': 'In-depth analysis of Manus AI capabilities, limitations, and market positioning.'
+                        },
+                        link: 'manus-ai'
+                    },
+                    {
+                        id: 'global-economy-2025',
+                        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
+                        date: {
+                            'zh-CN': '2024年12月10日',
+                            'zh-TW': '2024年12月10日',
+                            'en': 'Dec 10, 2024'
+                        },
+                        title: {
+                            'zh-CN': '2025年全球经济展望',
+                            'zh-TW': '2025年全球經濟展望',
+                            'en': '2025 Global Economy Outlook'
+                        },
+                        description: {
+                            'zh-CN': '全球经济增长将加速，尽管面临地缘政治紧张局势和政策不确定性等挑战。',
+                            'zh-TW': '全球經濟增長將加速，儘管面臨地緣政治緊張局勢和政策不確定性等挑戰。',
+                            'en': 'Global economic growth set to strengthen despite geopolitical tensions and policy uncertainties.'
+                        },
+                        link: 'global-economy-2025'
+                    }
+                ];
+
+                // 保存到localStorage
+                localStorage.setItem('featuredArticles', JSON.stringify(featuredArticles));
+                
+                // 验证保存
+                const saved = localStorage.getItem('featuredArticles');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    document.getElementById('result').innerHTML = `
+                        <div class="success">
+                            ✅ 保存成功！<br><br>
+                            已保存 ${parsed.length} 篇文章到 localStorage<br><br>
+                            <small>现在你可以刷新页面，数据不会丢失了！</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div style="color: #ef4444; font-size: 18px; margin: 30px 0;">
+                        ❌ 保存失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 页面加载时自动保存
+        window.onload = function() {
+            saveData();
+        };
+    </script>
+</body>
+</html>
+

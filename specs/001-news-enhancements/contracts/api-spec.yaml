@@ -1,0 +1,835 @@
+openapi: 3.0.3
+info:
+  title: 新闻页面增强与智能功能 API
+  description: Backend API for news enhancements, appointments, and AI chatbot
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.yourdomain.com
+    description: Production
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Articles
+    description: Article management and retrieval
+  - name: Appointments
+    description: Appointment booking and management
+  - name: Chat
+    description: AI chatbot interactions
+  - name: FAQs
+    description: FAQ knowledge base management
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ==================== Authentication ====================
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Admin login
+      description: Authenticate admin user and return JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: secretpassword
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+                    example: 604800
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/verify:
+    post:
+      tags: [Authentication]
+      summary: Verify JWT token
+      description: Verify if the provided JWT token is valid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  username:
+                    type: string
+                    example: admin
+                  role:
+                    type: string
+                    example: admin
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== Articles ====================
+  /api/v1/articles:
+    get:
+      tags: [Articles]
+      summary: List articles
+      description: Get paginated list of articles with optional filtering
+      security: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [headline, regulatory, analysis, business, enterprise, outlook]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, archived]
+            default: published
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 6
+        - name: exclude_id
+          in: query
+          description: Exclude article with this ID (for related articles)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of articles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ArticleSummary'
+                  total:
+                    type: integer
+                    example: 42
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 6
+                  has_more:
+                    type: boolean
+                    example: true
+
+    post:
+      tags: [Articles]
+      summary: Create article
+      description: Create a new article (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleCreate'
+      responses:
+        '201':
+          description: Article created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/articles/{id}:
+    get:
+      tags: [Articles]
+      summary: Get article by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Article details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Articles]
+      summary: Update article
+      description: Update an existing article (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleUpdate'
+      responses:
+        '200':
+          description: Article updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Articles]
+      summary: Delete article
+      description: Delete an article (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Article deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== Appointments ====================
+  /api/v1/appointments:
+    get:
+      tags: [Appointments]
+      summary: List all appointments
+      description: Get all appointments (admin only)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, completed, cancelled]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+
+    post:
+      tags: [Appointments]
+      summary: Create appointment
+      description: Book a new appointment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+      responses:
+        '201':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Invalid input or time slot unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/appointments/{id}:
+    get:
+      tags: [Appointments]
+      summary: Get appointment by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+    put:
+      tags: [Appointments]
+      summary: Update appointment status
+      description: Update appointment status (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, completed, cancelled]
+      responses:
+        '200':
+          description: Appointment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+
+  /api/v1/appointments/available-slots:
+    get:
+      tags: [Appointments]
+      summary: Get available time slots
+      description: Get available time slots for a specific date
+      security: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2024-01-15'
+      responses:
+        '200':
+          description: List of available time slots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  available_slots:
+                    type: array
+                    items:
+                      type: string
+                      example: '09:00'
+                  unavailable_slots:
+                    type: array
+                    items:
+                      type: string
+
+  # ==================== Chat ====================
+  /api/v1/chat:
+    post:
+      tags: [Chat]
+      summary: Send chat message
+      description: Send a message to the AI chatbot and get a response
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  example: 如何预约咨询服务？
+                session_id:
+                  type: string
+                  format: uuid
+                  description: Optional session ID to continue conversation
+      responses:
+        '200':
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                    example: 您可以访问咨询页面，选择日期和时间...
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: [faq, article]
+                        id:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        similarity:
+                          type: number
+                          format: float
+                  response_time_ms:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/chat/history/{session_id}:
+    get:
+      tags: [Chat]
+      summary: Get chat history
+      description: Retrieve chat history for a session
+      security: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    format: uuid
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role:
+                          type: string
+                          enum: [user, assistant, system]
+                        content:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+
+  # ==================== FAQs ====================
+  /api/v1/faqs:
+    get:
+      tags: [FAQs]
+      summary: List FAQs
+      description: Get all active FAQs
+      security: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: List of FAQs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FAQ'
+
+    post:
+      tags: [FAQs]
+      summary: Create FAQ
+      description: Create a new FAQ (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FAQCreate'
+      responses:
+        '201':
+          description: FAQ created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FAQ'
+
+  /api/v1/faqs/{id}:
+    put:
+      tags: [FAQs]
+      summary: Update FAQ
+      description: Update an existing FAQ (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FAQUpdate'
+      responses:
+        '200':
+          description: FAQ updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FAQ'
+
+    delete:
+      tags: [FAQs]
+      summary: Delete FAQ
+      description: Delete a FAQ (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: FAQ deleted
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ArticleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        title_zh:
+          type: string
+        title_en:
+          type: string
+        summary_zh:
+          type: string
+          minLength: 50
+          maxLength: 80
+        summary_en:
+          type: string
+          minLength: 50
+          maxLength: 80
+        image_url:
+          type: string
+          format: uri
+        published_at:
+          type: string
+          format: date-time
+
+    Article:
+      allOf:
+        - $ref: '#/components/schemas/ArticleSummary'
+        - type: object
+          properties:
+            lead_zh:
+              type: string
+            lead_en:
+              type: string
+            content_zh:
+              type: array
+              items:
+                type: object
+            content_en:
+              type: array
+              items:
+                type: object
+            author:
+              type: string
+
+    ArticleCreate:
+      type: object
+      required: [category, title_zh, title_en, summary_zh, summary_en, content_zh, content_en]
+      properties:
+        category:
+          type: string
+          enum: [headline, regulatory, analysis, business, enterprise, outlook]
+        title_zh:
+          type: string
+        title_en:
+          type: string
+        summary_zh:
+          type: string
+          minLength: 50
+          maxLength: 80
+        summary_en:
+          type: string
+          minLength: 50
+          maxLength: 80
+        content_zh:
+          type: array
+        content_en:
+          type: array
+        image_url:
+          type: string
+        author:
+          type: string
+
+    ArticleUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, published, archived]
+        title_zh:
+          type: string
+        summary_zh:
+          type: string
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        appointment_date:
+          type: string
+          format: date
+        time_slot:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        service_type:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+        confirmation_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    AppointmentCreate:
+      type: object
+      required: [name, email, appointment_date, time_slot]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        appointment_date:
+          type: string
+          format: date
+        time_slot:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        service_type:
+          type: string
+        notes:
+          type: string
+
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        answer:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        priority:
+          type: integer
+        is_active:
+          type: boolean
+        usage_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FAQCreate:
+      type: object
+      required: [question, answer, keywords]
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        priority:
+          type: integer
+          default: 0
+
+    FAQUpdate:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        priority:
+          type: integer
+        is_active:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, useScroll, useTransform } from 'motion/react';
-import videoFile from '../assets/8___202510142332_shlpf.mp4';
+import videoFile from '../assets/aa5b69881025d98f3974c2d1a5a4812c_raw.mp4';
 
 export function HomePage() {
   const { language } = useLanguage();
@@ -42,14 +42,26 @@ export function HomePage() {
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
 
       {/* Video Hero Section - Full Screen */}
-      <motion.section 
-        className="relative h-screen flex items-center justify-center overflow-hidden"
+      <motion.section
+        className="relative h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429]"
         style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
       >
-        {/* Video Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429]">
+        {/* Video Title */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative z-20 mb-12 text-center px-8"
+        >
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-wide">
+            {language.startsWith('zh') ? '视频标题' : 'SOLID ITRATIVE EVOLUTION'}
+          </h1>
+        </motion.div>
+
+        {/* Video Container */}
+        <div className="relative z-10 w-full flex items-center justify-center flex-1">
           {!isPlaying ? (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0d2847] via-[#1a3654] to-[#0a2540] flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
               {/* Video Window with Play Button */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -111,7 +123,7 @@ export function HomePage() {
               </motion.div>
             </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-black p-8">
+            <div className="w-full h-full flex items-center justify-center p-8">
               <div className="w-[90%] max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-2xl">
                 <video
                   className="w-full h-full object-cover"
@@ -121,17 +133,11 @@ export function HomePage() {
                   controls
                 >
                   <source src={videoFile} type="video/mp4" />
-                  您的浏览器不支持视频播放。
-                </video>
+                  您的浏览器不支持视频播放�?                </video>
               </div>
             </div>
           )}
-          
-          {/* Video Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a2540] via-transparent to-transparent pointer-events-none"></div>
         </div>
-
-
       </motion.section>
 
       {/* Scroll Progress Indicator */}
@@ -188,13 +194,13 @@ export function HomePage() {
 
               {/* Description with stagger animation */}
               <motion.p
-                className="text-xl md:text-2xl text-gray-300 leading-relaxed max-w-2xl"
+                className="text-xl md:text-2xl text-gray-300 leading-relaxed max-w-3xl"
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 0.5 }}
               >
-                SUNLUNER &LEX INC
+                SUNLUNER&LEX INC. (S&L) commited to strenth the competitiveness of client company during the business develpoment.
               </motion.p>
             </motion.div>
           </div>

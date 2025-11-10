@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导出新闻数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a2540;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #00a4e4;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        pre {
+            background: black;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #00a4e4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #0090cc;
+        }
+        .success {
+            color: #4ade80;
+            margin-left: 10px;
+        }
+        .instructions {
+            background: rgba(59, 91, 219, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b5bdb;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 新闻数据导出工具</h1>
+        
+        <div class="instructions">
+            <h2>📋 使用说明：</h2>
+            <ol>
+                <li>确保你已经在 <code>localhost:3000</code> 上编辑并保存了新闻内容</li>
+                <li>点击下面的"读取数据"按钮</li>
+                <li>点击"复制数据"按钮复制所有数据</li>
+                <li>将复制的数据发送给我（粘贴到聊天框）</li>
+                <li>我会将数据更新到代码文件中，使其永久生效</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>1. 特色文章数据 (6个模块)</h2>
+            <button onclick="loadData('featuredArticles')">读取数据</button>
+            <button onclick="copyData('featuredArticles')">复制数据</button>
+            <span id="copy-status-featured" class="success" style="display:none;">✓ 已复制!</span>
+            <pre id="featuredArticles-data">点击"读取数据"按钮...</pre>
+        </div>
+
+        <div class="section">
+            <h2>2. 焦点新闻数据</h2>
+            <button onclick="loadData('focusPointNews')">读取数据</button>
+            <button onclick="copyData('focusPointNews')">复制数据</button>
+            <span id="copy-status-focus" class="success" style="display:none;">✓ 已复制!</span>
+            <pre id="focusPointNews-data">点击"读取数据"按钮...</pre>
+        </div>
+
+        <div class="section">
+            <h2>3. 实时新闻列表</h2>
+            <button onclick="loadData('liveNewsList')">读取数据</button>
+            <button onclick="copyData('liveNewsList')">复制数据</button>
+            <span id="copy-status-live" class="success" style="display:none;">✓ 已复制!</span>
+            <pre id="liveNewsList-data">点击"读取数据"按钮...</pre>
+        </div>
+
+        <div class="section">
+            <h2>4. 全部数据（一键操作）</h2>
+            <button onclick="loadAllData()">读取所有数据</button>
+            <button onclick="copyAllData()">复制所有数据</button>
+            <button onclick="downloadAllData()" style="background: #3b5bdb;">💾 下载完整数据文件</button>
+            <span id="copy-status-all" class="success" style="display:none;">✓ 已复制!</span>
+            <pre id="all-data">点击"读取所有数据"按钮...</pre>
+        </div>
+
+        <div class="section" style="background: rgba(0, 164, 228, 0.1); border-left: 4px solid #00a4e4;">
+            <h2>⚡ 推荐方式：下载文件</h2>
+            <p style="margin-bottom: 15px;">由于数据量较大，推荐使用下载文件的方式：</p>
+            <button onclick="downloadAllData()" style="background: #00a4e4; font-size: 18px; padding: 15px 30px;">
+                📥 点击下载完整数据文件
+            </button>
+            <p style="margin-top: 15px; color: #4ade80;">下载后，将文件发送给开发人员即可</p>
+        </div>
+    </div>
+
+    <script>
+        function loadData(key) {
+            const data = localStorage.getItem(key);
+            const element = document.getElementById(key + '-data');
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    element.textContent = JSON.stringify(parsed, null, 2);
+                } catch (e) {
+                    element.textContent = data;
+                }
+            } else {
+                element.textContent = '未找到数据';
+            }
+        }
+
+        function copyData(key) {
+            const data = localStorage.getItem(key);
+            if (data) {
+                navigator.clipboard.writeText(data).then(() => {
+                    const statusId = key === 'featuredArticles' ? 'copy-status-featured' : 
+                                    key === 'focusPointNews' ? 'copy-status-focus' : 'copy-status-live';
+                    const status = document.getElementById(statusId);
+                    status.style.display = 'inline';
+                    setTimeout(() => {
+                        status.style.display = 'none';
+                    }, 2000);
+                });
+            }
+        }
+
+        function loadAllData() {
+            const allData = {
+                featuredArticles: localStorage.getItem('featuredArticles'),
+                focusPointNews: localStorage.getItem('focusPointNews'),
+                liveNewsList: localStorage.getItem('liveNewsList')
+            };
+            
+            // Parse each item
+            Object.keys(allData).forEach(key => {
+                if (allData[key]) {
+                    try {
+                        allData[key] = JSON.parse(allData[key]);
+                    } catch (e) {
+                        // Keep as string if parse fails
+                    }
+                }
+            });
+            
+            document.getElementById('all-data').textContent = JSON.stringify(allData, null, 2);
+            
+            // Also load individual sections
+            loadData('featuredArticles');
+            loadData('focusPointNews');
+            loadData('liveNewsList');
+        }
+
+        function copyAllData() {
+            const allData = {
+                featuredArticles: localStorage.getItem('featuredArticles'),
+                focusPointNews: localStorage.getItem('focusPointNews'),
+                liveNewsList: localStorage.getItem('liveNewsList')
+            };
+
+            navigator.clipboard.writeText(JSON.stringify(allData, null, 2)).then(() => {
+                const status = document.getElementById('copy-status-all');
+                status.style.display = 'inline';
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 2000);
+            });
+        }
+
+        function downloadAllData() {
+            const allData = {
+                featuredArticles: localStorage.getItem('featuredArticles'),
+                focusPointNews: localStorage.getItem('focusPointNews'),
+                liveNewsList: localStorage.getItem('liveNewsList')
+            };
+
+            // Parse each item for better formatting
+            Object.keys(allData).forEach(key => {
+                if (allData[key]) {
+                    try {
+                        allData[key] = JSON.parse(allData[key]);
+                    } catch (e) {
+                        // Keep as string if parse fails
+                    }
+                }
+            });
+
+            // Create blob and download
+            const jsonString = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'news-data-backup-' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ 文件下载成功！\n\n请将下载的 JSON 文件发送给开发人员。');
+        }
+
+        // Auto-load all data on page load
+        window.onload = function() {
+            loadAllData();
+        };
+    </script>
+</body>
+</html>
+

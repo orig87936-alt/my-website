@@ -61,7 +61,7 @@ export function BusinessPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a2540] pt-20">
+    <div className="min-h-screen bg-[#0a2540] pt-32">
       {/* Hero Section */}
       <section className="py-24 px-8 border-b border-white/10">
         <div className="max-w-[1440px] mx-auto">
@@ -91,9 +91,9 @@ export function BusinessPage() {
             <div>
               <div className="mb-12">
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.neweconomy.title')}</h2>
-                <p className="text-gray-400">{language === 'zh' ? '领先的新兴技术和创新商业模式' : 'Leading Emerging Technologies and Innovative Business Models'}</p>
+                <p className="text-gray-400">{language.startsWith('zh') ? '行业增长引擎' : 'LEADING INDUSTRY'}</p>
               </div>
-              
+
               <div className="space-y-6">
                 {newEconomyCategories.map((category, index) => {
                   const Icon = category.icon;
@@ -138,7 +138,7 @@ export function BusinessPage() {
                             <Icon className="w-7 h-7" />
                           </div>
                           <div className="text-right">
-                            <p className="text-sm opacity-80 mb-1">{language === 'zh' ? '预计年化收益' : 'Expected Annual Return'}</p>
+                            <p className="text-sm opacity-80 mb-1">{language.startsWith('zh') ? '预计年化收益' : 'Expected Annual Return'}</p>
                             <p className="text-2xl font-light">{category.returnRange}</p>
                           </div>
                         </div>
@@ -147,7 +147,7 @@ export function BusinessPage() {
                           <h3 className="text-2xl font-light mb-3">{category.title}</h3>
                           <p className="text-white/90 mb-4">{category.description}</p>
                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-sm">{language === 'zh' ? '了解更多' : 'Learn more'}</span>
+                            <span className="text-sm">{language.startsWith('zh') ? '了解更多' : 'Learn more'}</span>
                             <ArrowRight className="w-4 h-4" />
                           </div>
                         </div>
@@ -162,9 +162,9 @@ export function BusinessPage() {
             <div>
               <div className="mb-12">
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.traditional.title')}</h2>
-                <p className="text-gray-400">{language === 'zh' ? '稳定的传统经济产业' : 'Stable Traditional Economy'}</p>
+                <p className="text-gray-400">{language.startsWith('zh') ? '市场份额减少' : 'DECLINING AREA'}</p>
               </div>
-              
+
               <div className="space-y-6">
                 {traditionalCategories.map((category, index) => {
                   const Icon = category.icon;
@@ -209,7 +209,7 @@ export function BusinessPage() {
                             <Icon className="w-7 h-7" />
                           </div>
                           <div className="text-right">
-                            <p className="text-sm opacity-80 mb-1">{language === 'zh' ? '预计年化收益' : 'Expected Annual Return'}</p>
+                            <p className="text-sm opacity-80 mb-1">{language.startsWith('zh') ? '预计年化收益' : 'Expected Annual Return'}</p>
                             <p className="text-2xl font-light">{category.returnRange}</p>
                           </div>
                         </div>
@@ -218,7 +218,7 @@ export function BusinessPage() {
                           <h3 className="text-2xl font-light mb-3">{category.title}</h3>
                           <p className="text-white/90 mb-4">{category.description}</p>
                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-sm">{language === 'zh' ? '了解更多' : 'Learn more'}</span>
+                            <span className="text-sm">{language.startsWith('zh') ? '了解更多' : 'Learn more'}</span>
                             <ArrowRight className="w-4 h-4" />
                           </div>
                         </div>
@@ -244,16 +244,16 @@ export function BusinessPage() {
               className="glass rounded-2xl p-10 hover:bg-white/5 transition-all duration-300"
             >
               <h3 className="text-3xl font-light text-white mb-6">
-                {language === 'zh' ? '投资策略' : 'Investment Strategy'}
+                {language.startsWith('zh') ? '投资策略' : 'Investment Strategy'}
               </h3>
               <p className="text-gray-300 leading-relaxed mb-8">
-                {language === 'zh'
+                {language.startsWith('zh')
                   ? '我们采取多元化投资策略，在充分分析市场趋势和企业基本面的基础上，选择具有长期投资价值的企业。通过科学的风险评估和投后管理，最大化投资组合收益，同时控制风险敞口。我们注重与企业管理层的深度合作，不仅提供资金支持，更带来战略咨询和资源整合。'
                   : 'We adopt a diversified investment strategy, selecting companies with long-term investment value based on thorough analysis of market trends and fundamentals. Through scientific risk assessment and post-investment management, we maximize portfolio returns while controlling risk exposure.'
                 }
               </p>
               <button className="group flex items-center gap-2 text-[#00a4e4] hover:gap-3 transition-all">
-                <span>{language === 'zh' ? '了解更多' : 'Learn More'}</span>
+                <span>{language.startsWith('zh') ? '了解更多' : 'Learn More'}</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </motion.div>
@@ -267,16 +267,16 @@ export function BusinessPage() {
               className="glass rounded-2xl p-10 hover:bg-white/5 transition-all duration-300"
             >
               <h3 className="text-3xl font-light text-white mb-6">
-                {language === 'zh' ? '价值创造' : 'Value Creation'}
+                {language.startsWith('zh') ? '价值创造' : 'Value Creation'}
               </h3>
               <p className="text-gray-300 leading-relaxed mb-8">
-                {language === 'zh'
+                {language.startsWith('zh')
                   ? '我们采用全方位的价值创造体系，从战略规划到运营优化，再到退出管理，全程参与被投企业的发展。通过整合产业资源和专业人才，帮助企业实现业务增长和市场突破。我们特别关注企业的可持续发展能力，推动管理创新和数字化转型，创造长期价值。'
                   : 'We employ a comprehensive value creation system, participating in portfolio companies\' development from strategic planning to operational optimization and exit management. By integrating industry resources and professional talent, we help companies achieve business growth and market breakthroughs.'
                 }
               </p>
               <button className="group flex items-center gap-2 text-[#00a4e4] hover:gap-3 transition-all">
-                <span>{language === 'zh' ? '查看详情' : 'View Details'}</span>
+                <span>{language.startsWith('zh') ? '查看详情' : 'View Details'}</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
             </motion.div>

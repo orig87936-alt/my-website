@@ -2,8 +2,18 @@
 
 **Feature Branch**: `001-news-enhancements`  
 **Created**: 2025-11-07  
-**Status**: Draft  
+**Status**: Draft
 **Input**: 增强新闻页面功能：文章导航、自动排版、预约后端、智能问答机器人
+
+## Clarifications
+
+### Session 2025-11-07
+
+- Q: 预约时间冲突处理策略 - 冲突的定义和处理方式？ → A: 固定时间槽 - 预约按固定时间段（如30分钟或1小时）划分，每个时间槽只能预约一次
+- Q: 管理员身份验证与授权机制？ → A: 复用现有前端认证系统 - 使用现有的 AuthContext（admin/visitor角色，localStorage会话），后端API需验证管理员角色
+- Q: 智能问答机器人的知识来源和更新机制？ → A: RAG混合方案 - 静态FAQ知识库（管理员可编辑）+ 动态检索已发布文章内容，AI根据检索结果生成答案
+- Q: 预约确认通知的优先级和降级策略 - 通知失败时如何处理？ → A: 异步通知+重试 - 预约数据立即保存并返回成功，通知异步发送，失败时自动重试（最多3次），页面始终显示预约成功确认
+- Q: 文章底部相关文章的显示和加载策略？ → A: 初始显示6篇，点击"加载更多"每次显示6篇。每篇文章显示：缩略图、标题、简介（50-80字），点击可跳转到文章详情页
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -106,12 +116,15 @@
 #### 文章导航功能
 
 - **FR-001**: 系统必须在每篇新闻详情页底部显示"相关文章"区域
-- **FR-002**: 相关文章区域必须显示3-6篇同模块的其他文章（如果可用）
-- **FR-003**: 每篇相关文章必须显示：缩略图、标题、发布日期、简短摘要（可选）
+- **FR-002**: 相关文章区域初始必须显示6篇同模块的其他文章（如果可用）
+- **FR-003**: 每篇相关文章必须显示：缩略图（image_url）、标题（title）、简介（summary，50-80字符）
 - **FR-004**: 相关文章必须按发布时间倒序排列（最新的优先）
 - **FR-005**: 系统必须排除当前正在阅读的文章
 - **FR-006**: 点击相关文章必须跳转到对应的文章详情页
 - **FR-007**: 相关文章区域必须支持响应式布局（桌面3列、平板2列、手机1列）
+- **FR-007a**: 相关文章区域必须提供"加载更多"按钮，点击后每次加载6篇额外文章
+- **FR-007b**: "加载更多"按钮在没有更多文章时必须隐藏或显示"没有更多文章"提示
+- **FR-007c**: 文章简介（summary）必须严格限制在50-80个字符，超出部分自动截断并添加省略号
 
 #### 文章自动排版功能
 
@@ -130,33 +143,39 @@
 - **FR-017**: 系统必须验证预约表单数据（必填字段、格式校验、时间有效性）
 - **FR-018**: 系统必须将预约数据持久化存储到数据库
 - **FR-019**: 系统必须为每个预约生成唯一的预约编号
-- **FR-020**: 系统必须检查预约时间冲突，防止重复预约
-- **FR-021**: 系统必须在预约成功后发送确认通知（邮件或短信）
-- **FR-022**: 系统必须提供管理后台界面，用于查看和管理所有预约
+- **FR-020**: 系统必须检查预约时间冲突，防止重复预约。预约按固定时间槽划分（如30分钟或1小时），每个时间槽只允许一个预约
+- **FR-021**: 系统必须在预约成功后发送确认通知（邮件或短信）。通知发送为异步操作，失败时自动重试最多3次，不影响预约保存成功
+- **FR-021a**: 预约提交成功后，系统必须立即在页面显示确认信息（包含预约编号和详情），无论通知发送是否成功
+- **FR-022**: 系统必须提供管理后台界面，用于查看和管理所有预约。管理后台必须验证用户具有admin角色
 - **FR-023**: 系统必须支持预约状态管理（待处理、已确认、已完成、已取消）
 - **FR-024**: 系统必须记录预约的创建时间、更新时间和操作日志
 - **FR-025**: 系统必须提供预约提醒功能（提前1天自动发送提醒）
+- **FR-025a**: 后端API必须验证请求中的用户角色，仅允许admin角色访问管理功能（查看所有预约、更新状态等）
 
 #### 智能问答机器人
 
 - **FR-026**: 系统必须在网站所有页面提供聊天机器人入口（右下角浮动按钮）
 - **FR-027**: 聊天窗口必须支持展开/收起功能
 - **FR-028**: 机器人必须在用户发送消息后3秒内响应
-- **FR-029**: 机器人必须能够理解和回答关于网站服务、预约流程、文章内容的常见问题
+- **FR-029**: 机器人必须能够理解和回答关于网站服务、预约流程、文章内容的常见问题。使用RAG（检索增强生成）方案：从FAQ知识库和已发布文章中检索相关内容，然后生成答案
 - **FR-030**: 机器人必须提供常见问题快捷选项，用户可一键选择
 - **FR-031**: 机器人必须支持多轮对话，理解上下文
 - **FR-032**: 当机器人无法回答问题时，必须提供人工客服联系方式
 - **FR-033**: 系统必须保存用户对话历史（至少保留当前会话）
 - **FR-034**: 管理员必须能够查看对话记录和统计数据
-- **FR-035**: 管理员必须能够更新机器人的知识库和常见问题答案
+- **FR-035**: 管理员必须能够更新机器人的FAQ知识库（添加、编辑、删除问答对）
+- **FR-035a**: 系统必须自动索引所有已发布的文章内容，使机器人能够检索和引用最新文章
 
 ### Key Entities
 
 - **Article（文章）**: 代表新闻文章，包含标题、内容、发布日期、作者、模块分类、缩略图、状态（已发布/草稿）
-- **Appointment（预约）**: 代表用户预约记录，包含预约编号、用户姓名、联系方式、预约时间、服务类型、状态、备注、创建时间
+- **Appointment（预约）**: 代表用户预约记录，包含预约编号、用户姓名、联系方式、预约时间槽（固定时间段）、服务类型、状态、备注、创建时间、通知发送状态（待发送/已发送/发送失败）
+- **TimeSlot（时间槽）**: 代表可预约的固定时间段，包含开始时间、结束时间、是否可用、关联的预约ID
+- **NotificationQueue（通知队列）**: 代表待发送或重试的通知任务，包含预约ID、通知类型（邮件/短信）、收件人、内容、重试次数、下次重试时间、状态
 - **ChatMessage（聊天消息）**: 代表用户与机器人的对话消息，包含会话ID、发送者（用户/机器人）、消息内容、时间戳
 - **ChatSession（聊天会话）**: 代表一次完整的对话会话，包含会话ID、用户标识、开始时间、结束时间、消息列表
-- **KnowledgeBase（知识库）**: 代表机器人的知识条目，包含问题、答案、关键词、分类、优先级
+- **KnowledgeBase（知识库）**: 代表机器人的FAQ知识条目，包含问题、答案、关键词、分类、优先级、创建时间、更新时间
+- **ArticleIndex（文章索引）**: 代表已索引的文章内容，包含文章ID、标题、内容摘要、向量嵌入（用于语义搜索）、索引时间
 
 ## Success Criteria *(mandatory)*
 
@@ -172,4 +191,398 @@
 - **SC-008**: 机器人响应时间在95%的情况下低于3秒
 - **SC-009**: 使用智能问答机器人后，人工客服咨询量减少40%
 - **SC-010**: 用户对智能问答机器人的满意度评分达到4.0/5.0以上
+
+---
+
+## Technical Architecture *(mandatory)*
+
+### Technology Stack
+
+#### Frontend (Existing)
+- **Framework**: React 18.3.1 + TypeScript
+- **Build Tool**: Vite 6.3.5
+- **UI Library**: Radix UI + Tailwind CSS
+- **Animation**: Framer Motion
+- **State Management**: React Context (AuthContext, LanguageContext)
+- **Data Storage**: localStorage (temporary, will migrate to backend)
+- **Deployment**: Vercel (https://your-domain.vercel.app)
+
+#### Backend (New)
+- **Framework**: FastAPI 0.109+ (Python 3.11+)
+- **ASGI Server**: Uvicorn with uvloop
+- **ORM**: SQLAlchemy 2.0
+- **Database Migration**: Alembic
+- **Validation**: Pydantic 2.5+
+- **Authentication**: JWT (python-jose)
+- **Password Hashing**: bcrypt (passlib)
+- **HTTP Client**: httpx (async)
+- **Email Service**: Resend API
+- **Deployment**: AWS EC2 + Nginx + Systemd
+
+#### Database
+- **Primary Database**: PostgreSQL 14+ (AWS RDS or EC2 self-hosted)
+- **Vector Extension**: pgvector 0.5+ (for semantic search)
+- **Connection Pool**: SQLAlchemy pool (size=10, max_overflow=20)
+- **Backup Strategy**: Daily automated backups (AWS RDS automated backups)
+
+#### AI Services
+- **Chat Model**: DeepSeek Chat API (deepseek-chat)
+- **Embedding Model**: OpenAI text-embedding-3-small (1536 dimensions)
+  - Alternative: DeepSeek embedding API if available
+- **Vector Search**: PostgreSQL pgvector with cosine similarity
+- **RAG Architecture**: FAQ knowledge base + article vector index
+
+#### Infrastructure (AWS)
+- **Compute**: EC2 t3.small (2 vCPU, 2GB RAM) or Lightsail $10/month
+- **Database**: RDS PostgreSQL t3.micro (free tier eligible) or EC2 self-hosted
+- **Load Balancer**: Application Load Balancer (optional, for production)
+- **DNS**: Route 53
+- **SSL Certificate**: AWS Certificate Manager (ACM)
+- **Reverse Proxy**: Nginx
+- **Process Manager**: Systemd
+
+### System Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│         Frontend (Vercel)                   │
+│   React + TypeScript + Tailwind CSS         │
+│   https://your-domain.vercel.app            │
+└─────────────────────────────────────────────┘
+                    ↓ HTTPS/CORS
+┌─────────────────────────────────────────────┐
+│      Nginx (Reverse Proxy)                  │
+│   SSL Termination + Rate Limiting           │
+│   https://api.your-domain.com               │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│      FastAPI Application (Uvicorn)          │
+│   - Article Management API                  │
+│   - Appointment API                         │
+│   - Chat API (RAG)                          │
+│   - Authentication API (JWT)                │
+└─────────────────────────────────────────────┘
+         ↓                    ↓
+┌──────────────────┐  ┌──────────────────────┐
+│  PostgreSQL      │  │  External Services   │
+│  + pgvector      │  │  - DeepSeek API      │
+│  - articles      │  │  - OpenAI Embeddings │
+│  - appointments  │  │  - Resend Email      │
+│  - chat_messages │  │                      │
+│  - faqs          │  │                      │
+│  - embeddings    │  │                      │
+└──────────────────┘  └──────────────────────┘
+```
+
+### Database Schema
+
+#### Table: articles
+```sql
+CREATE TABLE articles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category VARCHAR(50) NOT NULL,  -- 'headline', 'regulatory', 'analysis', 'business', 'enterprise', 'outlook'
+  status VARCHAR(20) DEFAULT 'published',  -- 'draft', 'published', 'archived'
+
+  title_zh TEXT NOT NULL,
+  title_en TEXT NOT NULL,
+  summary_zh VARCHAR(80) NOT NULL,
+  summary_en VARCHAR(80) NOT NULL,
+  lead_zh TEXT,
+  lead_en TEXT,
+
+  content_zh JSONB NOT NULL,  -- Array of content blocks
+  content_en JSONB NOT NULL,
+
+  image_url TEXT,
+  image_caption_zh TEXT,
+  image_caption_en TEXT,
+  author VARCHAR(100),
+
+  published_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_category CHECK (category IN ('headline', 'regulatory', 'analysis', 'business', 'enterprise', 'outlook')),
+  CONSTRAINT valid_status CHECK (status IN ('draft', 'published', 'archived'))
+);
+
+CREATE INDEX idx_articles_category ON articles(category);
+CREATE INDEX idx_articles_published_at ON articles(published_at DESC);
+CREATE INDEX idx_articles_category_published ON articles(category, published_at DESC) WHERE status = 'published';
+```
+
+#### Table: appointments
+```sql
+CREATE TABLE appointments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50),
+
+  appointment_date DATE NOT NULL,
+  time_slot VARCHAR(10) NOT NULL,  -- '09:00', '09:30', '10:00', etc.
+
+  service_type VARCHAR(100),
+  notes TEXT,
+
+  status VARCHAR(20) DEFAULT 'pending',  -- 'pending', 'confirmed', 'completed', 'cancelled'
+  notification_status VARCHAR(20) DEFAULT 'pending',  -- 'pending', 'sent', 'failed'
+  notification_retry_count INT DEFAULT 0,
+  notification_last_attempt TIMESTAMPTZ,
+
+  confirmation_number VARCHAR(20) UNIQUE,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_status CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+  CONSTRAINT valid_time_slot CHECK (time_slot ~ '^\d{2}:\d{2}$'),
+  UNIQUE(appointment_date, time_slot) WHERE status NOT IN ('cancelled')
+);
+
+CREATE INDEX idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX idx_appointments_notification ON appointments(notification_status, notification_retry_count)
+  WHERE notification_status = 'failed' AND notification_retry_count < 3;
+```
+
+#### Table: chat_messages
+```sql
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL,
+  role VARCHAR(20) NOT NULL,  -- 'user', 'assistant', 'system'
+  content TEXT NOT NULL,
+  metadata JSONB,  -- Store sources, tokens, etc.
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_role CHECK (role IN ('user', 'assistant', 'system'))
+);
+
+CREATE INDEX idx_chat_messages_session ON chat_messages(session_id, created_at);
+```
+
+#### Table: faqs
+```sql
+CREATE TABLE faqs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  keywords TEXT[] NOT NULL,
+  category VARCHAR(50),
+  priority INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  usage_count INT DEFAULT 0,
+  last_used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_faqs_keywords ON faqs USING GIN(keywords);
+CREATE INDEX idx_faqs_priority ON faqs(priority DESC) WHERE is_active = true;
+```
+
+#### Table: article_embeddings
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE article_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  embedding vector(1536) NOT NULL,  -- OpenAI text-embedding-3-small dimension
+  content_text TEXT,
+  language VARCHAR(10) NOT NULL,  -- 'zh', 'en'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(article_id, language)
+);
+
+CREATE INDEX idx_article_embeddings_vector ON article_embeddings
+  USING hnsw (embedding vector_cosine_ops);
+```
+
+### API Endpoints
+
+#### Authentication
+- `POST /api/v1/auth/login` - Admin login, returns JWT token
+- `POST /api/v1/auth/verify` - Verify JWT token validity
+
+#### Articles
+- `GET /api/v1/articles` - List articles (query params: category, status, page, page_size)
+- `GET /api/v1/articles/{id}` - Get single article
+- `POST /api/v1/articles` - Create article (admin only)
+- `PUT /api/v1/articles/{id}` - Update article (admin only)
+- `DELETE /api/v1/articles/{id}` - Delete article (admin only)
+
+#### Appointments
+- `POST /api/v1/appointments` - Create appointment
+- `GET /api/v1/appointments` - List all appointments (admin only)
+- `GET /api/v1/appointments/{id}` - Get appointment details
+- `PUT /api/v1/appointments/{id}` - Update appointment status (admin only)
+- `GET /api/v1/appointments/available-slots` - Get available time slots for a date
+
+#### Chat
+- `POST /api/v1/chat` - Send message and get AI response
+- `GET /api/v1/chat/history/{session_id}` - Get chat history (optional)
+
+#### FAQ Management (Admin)
+- `GET /api/v1/faqs` - List FAQs
+- `POST /api/v1/faqs` - Create FAQ (admin only)
+- `PUT /api/v1/faqs/{id}` - Update FAQ (admin only)
+- `DELETE /api/v1/faqs/{id}` - Delete FAQ (admin only)
+
+### Frontend Integration
+
+#### Files to Modify
+
+1. **src/data/newsData.ts**
+   - Add `category` field to NewsArticle interface
+   - Add `summary` field (50-80 characters)
+   - Add `publishedAt` timestamp
+   - Replace localStorage functions with API calls
+
+2. **src/components/NewsDetailPage.tsx**
+   - Create `RelatedArticles` component
+   - Fetch related articles from API: `GET /api/v1/articles?category={category}&page=1&page_size=6`
+   - Implement "Load More" button (increment page)
+
+3. **src/components/ConsultingPage.tsx**
+   - Replace `alert()` with API call: `POST /api/v1/appointments`
+   - Handle API response and show confirmation
+   - Integrate chat API: `POST /api/v1/chat`
+
+4. **src/contexts/AuthContext.tsx**
+   - Add API login: `POST /api/v1/auth/login`
+   - Store JWT token in localStorage
+   - Add token to all API requests (Authorization header)
+
+5. **New: src/services/api.ts**
+   - Create centralized API client
+   - Handle authentication headers
+   - Error handling and retry logic
+
+#### API Client Example
+```typescript
+// src/services/api.ts
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.your-domain.com';
+
+async function apiCall(endpoint: string, options: RequestInit = {}) {
+  const token = localStorage.getItem('jwt_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export const articlesAPI = {
+  list: (params: { category?: string; page?: number; page_size?: number }) =>
+    apiCall(`/api/v1/articles?${new URLSearchParams(params as any)}`),
+  get: (id: string) => apiCall(`/api/v1/articles/${id}`),
+  create: (data: any) => apiCall('/api/v1/articles', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const appointmentsAPI = {
+  create: (data: any) => apiCall('/api/v1/appointments', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const chatAPI = {
+  send: (message: string, sessionId?: string) =>
+    apiCall('/api/v1/chat', { method: 'POST', body: JSON.stringify({ message, session_id: sessionId }) }),
+};
+```
+
+### Deployment Strategy
+
+#### Phase 1: Local Development
+1. Set up PostgreSQL locally (Docker recommended)
+2. Run FastAPI with `uvicorn app.main:app --reload`
+3. Test API endpoints with Swagger UI (http://localhost:8000/docs)
+4. Frontend connects to `http://localhost:8000`
+
+#### Phase 2: AWS Deployment
+1. **Provision EC2 Instance**
+   - Ubuntu 22.04 LTS
+   - t3.small (2 vCPU, 2GB RAM)
+   - Security Group: Allow 22 (SSH), 80 (HTTP), 443 (HTTPS)
+
+2. **Set up PostgreSQL**
+   - Option A: AWS RDS PostgreSQL (managed, recommended)
+   - Option B: Install on EC2 (self-managed)
+   - Install pgvector extension
+
+3. **Deploy FastAPI**
+   ```bash
+   # Install dependencies
+   sudo apt update
+   sudo apt install python3.11 python3-pip nginx
+
+   # Clone repository
+   git clone <your-repo>
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+
+   # Run database migrations
+   alembic upgrade head
+
+   # Configure systemd service
+   sudo nano /etc/systemd/system/fastapi.service
+   sudo systemctl start fastapi
+   sudo systemctl enable fastapi
+
+   # Configure Nginx
+   sudo nano /etc/nginx/sites-available/api
+   sudo systemctl restart nginx
+   ```
+
+4. **Configure SSL**
+   - Use AWS Certificate Manager (ACM) for ALB
+   - Or use Let's Encrypt with Certbot for Nginx
+
+5. **Update Frontend**
+   - Set `VITE_API_URL=https://api.your-domain.com` in Vercel environment variables
+   - Redeploy frontend
+
+### Security Considerations
+
+- **CORS**: Whitelist only frontend domain
+- **Rate Limiting**: Implement rate limiting on API endpoints (10 req/sec per IP)
+- **SQL Injection**: Use SQLAlchemy parameterized queries (automatic)
+- **XSS Protection**: Sanitize user inputs, use Content-Security-Policy headers
+- **JWT Security**: Use strong secret key (32+ characters), 7-day expiration
+- **HTTPS Only**: Enforce HTTPS in production
+- **Environment Variables**: Never commit `.env` file, use AWS Secrets Manager for production
+- **Database**: Use strong passwords, restrict network access to EC2 only
+
+### Performance Optimization
+
+- **Database Indexing**: All foreign keys and frequently queried fields indexed
+- **Connection Pooling**: SQLAlchemy pool (size=10, max_overflow=20)
+- **Caching**: Consider Redis for frequently accessed data (future enhancement)
+- **CDN**: Use CloudFront for static assets (future enhancement)
+- **Vector Search**: Use HNSW index for fast similarity search
+- **Async Operations**: Email notifications sent asynchronously (background tasks)
+
+### Monitoring & Logging
+
+- **Application Logs**: Use Python logging module, write to `/var/log/fastapi/`
+- **Error Tracking**: Consider Sentry integration (future enhancement)
+- **Performance Monitoring**: AWS CloudWatch for EC2 metrics
+- **Database Monitoring**: RDS Performance Insights or pg_stat_statements
+- **Uptime Monitoring**: Consider UptimeRobot or AWS CloudWatch alarms
 

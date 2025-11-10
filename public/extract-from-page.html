@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>从页面提取数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a2540;
+            color: white;
+        }
+        .instructions {
+            background: rgba(0, 164, 228, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00a4e4;
+        }
+        .code-box {
+            background: black;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        code {
+            color: #4ade80;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: #00a4e4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0090cc;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 从页面提取新闻数据</h1>
+    
+    <div class="instructions">
+        <h2>📋 操作步骤：</h2>
+        <ol>
+            <li>确保你已经打开了新闻页面（News页面）</li>
+            <li>在新闻页面按 <strong>F12</strong> 打开开发者工具</li>
+            <li>切换到 <strong>Console（控制台）</strong> 标签</li>
+            <li>复制下面的代码，粘贴到控制台，按回车运行</li>
+            <li>数据会自动下载为JSON文件</li>
+        </ol>
+    </div>
+
+    <div class="code-box">
+        <h3>方法1：提取页面显示的文章数据（推荐）</h3>
+        <pre><code id="code1">// 提取页面上显示的6个文章模块
+const articles = [];
+const articleCards = document.querySelectorAll('.group.glass.rounded-2xl');
+
+articleCards.forEach((card, index) => {
+  const img = card.querySelector('img');
+  const dateEl = card.querySelector('.text-gray-400');
+  const titleEl = card.querySelector('.text-xl');
+  
+  if (img && titleEl) {
+    articles.push({
+      id: 'article-' + (index + 1),
+      image: img.src,
+      date: {
+        'zh-CN': dateEl ? dateEl.textContent.trim() : '',
+        'zh-TW': dateEl ? dateEl.textContent.trim() : '',
+        'en': dateEl ? dateEl.textContent.trim() : ''
+      },
+      title: {
+        'zh-CN': titleEl.textContent.trim(),
+        'zh-TW': titleEl.textContent.trim(),
+        'en': titleEl.textContent.trim()
+      },
+      description: {
+        'zh-CN': '',
+        'zh-TW': '',
+        'en': ''
+      },
+      link: 'article-' + (index + 1)
+    });
+  }
+});
+
+console.log('提取到的文章数据：', articles);
+console.log(JSON.stringify(articles, null, 2));
+
+// 下载为文件
+const blob = new Blob([JSON.stringify(articles, null, 2)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'featured-articles-extracted.json';
+a.click();
+URL.revokeObjectURL(url);
+
+alert('✅ 数据已提取并下载！共 ' + articles.length + ' 篇文章');</code></pre>
+        <button onclick="copyCode('code1')">📋 复制代码</button>
+    </div>
+
+    <div class="code-box">
+        <h3>方法2：强制保存当前显示的数据到localStorage</h3>
+        <pre><code id="code2">// 这个脚本会尝试从页面提取数据并保存到localStorage
+// 注意：需要在新闻页面运行
+
+// 提取文章数据
+const extractedArticles = [];
+const cards = document.querySelectorAll('.group.glass.rounded-2xl');
+
+cards.forEach((card, index) => {
+  const img = card.querySelector('img');
+  const dateEl = card.querySelector('.text-gray-400');
+  const titleEl = card.querySelector('.text-xl');
+  const descEl = card.querySelectorAll('p')[1]; // 第二个p标签通常是描述
+  
+  if (img && titleEl) {
+    const article = {
+      id: 'featured-' + Date.now() + '-' + index,
+      image: img.src,
+      date: {
+        'zh-CN': dateEl ? dateEl.textContent.trim() : '',
+        'zh-TW': dateEl ? dateEl.textContent.trim() : '',
+        'en': dateEl ? dateEl.textContent.trim() : ''
+      },
+      title: {
+        'zh-CN': titleEl.textContent.trim(),
+        'zh-TW': titleEl.textContent.trim(),
+        'en': titleEl.textContent.trim()
+      },
+      description: {
+        'zh-CN': descEl ? descEl.textContent.trim() : '',
+        'zh-TW': descEl ? descEl.textContent.trim() : '',
+        'en': descEl ? descEl.textContent.trim() : ''
+      },
+      link: 'article-' + (index + 1)
+    };
+    extractedArticles.push(article);
+  }
+});
+
+// 保存到localStorage
+if (extractedArticles.length > 0) {
+  localStorage.setItem('featuredArticles', JSON.stringify(extractedArticles));
+  console.log('✅ 已保存 ' + extractedArticles.length + ' 篇文章到 localStorage');
+  console.log(JSON.stringify(extractedArticles, null, 2));
+  
+  // 下载备份
+  const blob = new Blob([JSON.stringify(extractedArticles, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'featured-articles-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  alert('✅ 成功！\n- 已保存到 localStorage\n- 已下载备份文件\n- 共 ' + extractedArticles.length + ' 篇文章\n\n请刷新页面查看效果');
+} else {
+  alert('❌ 未找到文章数据，请确保在新闻页面运行此脚本');
+}</code></pre>
+        <button onclick="copyCode('code2')">📋 复制代码</button>
+    </div>
+
+    <div class="instructions" style="background: rgba(251, 191, 36, 0.2); border-left-color: #fbbf24;">
+        <h3 class="warning">⚠️ 重要提示：</h3>
+        <p>请在 <strong>新闻页面</strong>（http://localhost:3000 点击News）运行上面的代码，不要在这个页面运行！</p>
+    </div>
+
+    <script>
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ 代码已复制到剪贴板！\n\n请：\n1. 打开新闻页面\n2. 按F12打开控制台\n3. 粘贴代码并按回车');
+            });
+        }
+    </script>
+</body>
+</html>
+

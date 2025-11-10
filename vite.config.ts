@@ -81,6 +81,7 @@
     },
     server: {
       port: 3000,
+      host: true, // 启用网络访问，显示局域网 IP 地址
       open: true,
     },
   });

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新闻数据诊断</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+        }
+        h1, h2 { color: #00a4e4; }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #444;
+        }
+        .status { 
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .ok { background: #1e4620; border-left: 4px solid #28a745; }
+        .warning { background: #4a3c1e; border-left: 4px solid #ffc107; }
+        .error { background: #4a1e1e; border-left: 4px solid #dc3545; }
+        button {
+            background: #00a4e4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0090cc; }
+    </style>
+</head>
+<body>
+    <h1>🔍 新闻数据诊断工具</h1>
+    
+    <div class="section">
+        <h2>📊 LocalStorage 数据检查</h2>
+        <div id="storageCheck"></div>
+    </div>
+
+    <div class="section">
+        <h2>📝 实时新闻列表 (liveNewsList)</h2>
+        <div id="liveNewsStatus"></div>
+        <pre id="liveNewsData"></pre>
+    </div>
+
+    <div class="section">
+        <h2>🎯 焦点新闻 (focusPointNews)</h2>
+        <div id="focusStatus"></div>
+        <pre id="focusData"></pre>
+    </div>
+
+    <div class="section">
+        <h2>⭐ 特色文章 (featuredArticles)</h2>
+        <div id="featuredStatus"></div>
+        <pre id="featuredData"></pre>
+    </div>
+
+    <div class="section">
+        <h2>🔧 操作</h2>
+        <button onclick="location.reload()">🔄 刷新诊断</button>
+        <button onclick="window.open('http://localhost:5173', '_blank')">🌐 打开主页</button>
+    </div>
+
+    <script>
+        function diagnose() {
+            // 检查 localStorage
+            const liveNews = localStorage.getItem('liveNewsList');
+            const focusPoint = localStorage.getItem('focusPointNews');
+            const featured = localStorage.getItem('featuredArticles');
+
+            let storageHTML = '';
+            
+            // 实时新闻检查
+            if (liveNews) {
+                try {
+                    const data = JSON.parse(liveNews);
+                    if (Array.isArray(data)) {
+                        if (data.length === 0) {
+                            document.getElementById('liveNewsStatus').innerHTML = 
+                                '<div class="status error">❌ 数组为空！这就是为什么新闻不显示的原因。</div>';
+                            storageHTML += '<div class="status error">实时新闻: 空数组 (0条)</div>';
+                        } else {
+                            document.getElementById('liveNewsStatus').innerHTML = 
+                                `<div class="status ok">✅ 找到 ${data.length} 条新闻</div>`;
+                            storageHTML += `<div class="status ok">实时新闻: ${data.length} 条</div>`;
+                        }
+                        document.getElementById('liveNewsData').textContent = JSON.stringify(data, null, 2);
+                    } else {
+                        document.getElementById('liveNewsStatus').innerHTML = 
+                            '<div class="status error">❌ 数据格式错误：不是数组</div>';
+                        storageHTML += '<div class="status error">实时新闻: 格式错误</div>';
+                    }
+                } catch (e) {
+                    document.getElementById('liveNewsStatus').innerHTML = 
+                        `<div class="status error">❌ JSON 解析失败: ${e.message}</div>`;
+                    storageHTML += '<div class="status error">实时新闻: 解析失败</div>';
+                }
+            } else {
+                document.getElementById('liveNewsStatus').innerHTML = 
+                    '<div class="status warning">⚠️ localStorage 中没有数据（应该使用默认数据）</div>';
+                document.getElementById('liveNewsData').textContent = '无数据';
+                storageHTML += '<div class="status warning">实时新闻: 未存储（应使用默认值）</div>';
+            }
+
+            // 焦点新闻检查
+            if (focusPoint) {
+                try {
+                    const data = JSON.parse(focusPoint);
+                    document.getElementById('focusStatus').innerHTML = 
+                        '<div class="status ok">✅ 数据存在</div>';
+                    document.getElementById('focusData').textContent = JSON.stringify(data, null, 2);
+                    storageHTML += '<div class="status ok">焦点新闻: 已存储</div>';
+                } catch (e) {
+                    document.getElementById('focusStatus').innerHTML = 
+                        `<div class="status error">❌ JSON 解析失败: ${e.message}</div>`;
+                    storageHTML += '<div class="status error">焦点新闻: 解析失败</div>';
+                }
+            } else {
+                document.getElementById('focusStatus').innerHTML = 
+                    '<div class="status warning">⚠️ localStorage 中没有数据（应该使用默认数据）</div>';
+                document.getElementById('focusData').textContent = '无数据';
+                storageHTML += '<div class="status warning">焦点新闻: 未存储（应使用默认值）</div>';
+            }
+
+            // 特色文章检查
+            if (featured) {
+                try {
+                    const data = JSON.parse(featured);
+                    if (Array.isArray(data)) {
+                        if (data.length === 0) {
+                            document.getElementById('featuredStatus').innerHTML = 
+                                '<div class="status error">❌ 数组为空！</div>';
+                            storageHTML += '<div class="status error">特色文章: 空数组 (0篇)</div>';
+                        } else {
+                            document.getElementById('featuredStatus').innerHTML = 
+                                `<div class="status ok">✅ 找到 ${data.length} 篇文章</div>`;
+                            storageHTML += `<div class="status ok">特色文章: ${data.length} 篇</div>`;
+                        }
+                        document.getElementById('featuredData').textContent = JSON.stringify(data, null, 2);
+                    } else {
+                        document.getElementById('featuredStatus').innerHTML = 
+                            '<div class="status error">❌ 数据格式错误：不是数组</div>';
+                        storageHTML += '<div class="status error">特色文章: 格式错误</div>';
+                    }
+                } catch (e) {
+                    document.getElementById('featuredStatus').innerHTML = 
+                        `<div class="status error">❌ JSON 解析失败: ${e.message}</div>`;
+                    storageHTML += '<div class="status error">特色文章: 解析失败</div>';
+                }
+            } else {
+                document.getElementById('featuredStatus').innerHTML = 
+                    '<div class="status warning">⚠️ localStorage 中没有数据（应该使用默认数据）</div>';
+                document.getElementById('featuredData').textContent = '无数据';
+                storageHTML += '<div class="status warning">特色文章: 未存储（应使用默认值）</div>';
+            }
+
+            document.getElementById('storageCheck').innerHTML = storageHTML;
+        }
+
+        // 页面加载时自动诊断
+        diagnose();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Translation API Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Simple Translation</h2>
+        <input type="text" id="input1" placeholder="输入中文文本" value="中国">
+        <button onclick="testTranslate()">Translate to English</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+        const token = localStorage.getItem('token');
+
+        async function testTranslate() {
+            const input = document.getElementById('input1').value;
+            const resultDiv = document.getElementById('result1');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<span class="error">Error: No auth token found. Please login first.</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = 'Translating...';
+            
+            try {
+                console.log('🔄 Sending request:', {
+                    text: input,
+                    source_lang: 'zh',
+                    target_lang: 'en'
+                });
+                
+                const response = await fetch(`${API_BASE}/translation/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        text: input,
+                        source_lang: 'zh',
+                        target_lang: 'en'
+                    })
+                });
+                
+                console.log('📥 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Translation failed');
+                }
+                
+                const result = await response.json();
+                console.log('✅ Translation result:', result);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <strong>Success!</strong><br>
+                        Original: ${input}<br>
+                        Translated: ${result.translated_text}<br>
+                        Source Lang: ${result.source_lang}<br>
+                        Target Lang: ${result.target_lang}<br>
+                        Cached: ${result.cached}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('❌ Translation error:', error);
+                resultDiv.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
+

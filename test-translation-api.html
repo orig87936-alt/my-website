@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-height: 50px;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .token-status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+        }
+        .token-status.no-token {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Translation API Test</h1>
+        
+        <div id="tokenStatus" class="token-status"></div>
+
+        <div class="test-section">
+            <h2>Test 1: Login First</h2>
+            <input type="text" id="username" placeholder="Username" value="admin">
+            <input type="password" id="password" placeholder="Password" value="admin123">
+            <button onclick="testLogin()">Login</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: Simple Translation (Chinese → English)</h2>
+            <textarea id="input1" placeholder="输入中文文本">中国</textarea>
+            <button onclick="testTranslate('input1', 'result1', 'zh', 'en')">Translate to English</button>
+            <div id="result1" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Reverse Translation (English → Chinese)</h2>
+            <textarea id="input2" placeholder="Enter English text">Hello World</textarea>
+            <button onclick="testTranslate('input2', 'result2', 'en', 'zh')">Translate to Chinese</button>
+            <div id="result2" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 4: CORS Preflight Check</h2>
+            <button onclick="testCORS()">Test CORS</button>
+            <div id="corsResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        function updateTokenStatus() {
+            const token = localStorage.getItem('authToken');
+            const statusDiv = document.getElementById('tokenStatus');
+            
+            if (token) {
+                statusDiv.className = 'token-status';
+                statusDiv.innerHTML = `<strong>✅ Auth Token Found:</strong> ${token.substring(0, 50)}...`;
+            } else {
+                statusDiv.className = 'token-status no-token';
+                statusDiv.innerHTML = '<strong>⚠️ No Auth Token:</strong> Please login first';
+            }
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.innerHTML = '<span class="info">Logging in...</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('authToken', data.access_token);
+                    resultDiv.innerHTML = `<span class="success">✅ Login successful!</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    updateTokenStatus();
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Login failed:</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error('Login error:', error);
+            }
+        }
+
+        async function testTranslate(inputId, resultId, sourceLang, targetLang) {
+            const input = document.getElementById(inputId).value;
+            const resultDiv = document.getElementById(resultId);
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<span class="error">❌ Error: No auth token found. Please login first.</span>';
+                return;
+            }
+            
+            if (!input.trim()) {
+                resultDiv.innerHTML = '<span class="error">❌ Error: Please enter text to translate.</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<span class="info">🔄 Translating...</span>';
+            
+            try {
+                console.log('Sending request:', {
+                    url: `${API_BASE}/translation/translate`,
+                    text: input.trim(),
+                    source_lang: sourceLang,
+                    target_lang: targetLang,
+                    token: token.substring(0, 20) + '...'
+                });
+
+                const response = await fetch(`${API_BASE}/translation/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        text: input.trim(),
+                        source_lang: sourceLang,
+                        target_lang: targetLang,
+                    }),
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.ok) {
+                    const cached = data.cached ? ' (来自缓存)' : '';
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Translation successful${cached}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <div style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 4px;">
+                            <strong>Translated Text:</strong><br>
+                            ${data.translated_text}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Translation failed:</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error('Translation error:', error);
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('corsResult');
+            resultDiv.innerHTML = '<span class="info">🔄 Testing CORS...</span>';
+            
+            try {
+                // Test OPTIONS request
+                const response = await fetch(`${API_BASE}/translation/translate`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:3000',
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                    },
+                });
+
+                console.log('CORS preflight response:', response.status);
+                console.log('CORS headers:', [...response.headers.entries()]);
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials'),
+                };
+
+                if (response.ok || response.status === 200) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ CORS preflight successful</span>
+                        <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ CORS preflight failed (Status: ${response.status})</span>
+                        <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ CORS Error: ${error.message}</span>`;
+                console.error('CORS error:', error);
+            }
+        }
+
+        // Initialize
+        updateTokenStatus();
+    </script>
+</body>
+</html>
+

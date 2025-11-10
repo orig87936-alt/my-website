@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { Menu, X, Globe, Home, Briefcase, Newspaper, MessageSquare, Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
+import { Menu, X, Globe, Home, Briefcase, Newspaper, MessageSquare, Mail, Phone, MapPin, ChevronRight, LogOut, User, Settings, Calendar, LogIn, UserPlus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { Logo } from './Logo';
+import { LoginModal } from './Auth/LoginModal';
+import { RegisterModal } from './Auth/RegisterModal';
+import { UserMenu } from './Auth/UserMenu';
 
 interface NavigationProps {
   currentPage: string;
@@ -10,7 +15,16 @@ interface NavigationProps {
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
+  const { user, logout, isAuthenticated } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    // No need to reload, just close sidebar
+    setIsSidebarOpen(false);
+  };
 
   const navItems = [
     { id: 'home', label: t('nav.home'), icon: Home },
@@ -19,6 +33,13 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     { id: 'consulting', label: t('nav.consulting'), icon: MessageSquare },
     { id: 'contact', label: t('nav.contact'), icon: Mail },
   ];
+
+  // 管理员专用导航项
+  const adminNavItems = user?.role === 'ADMIN' ? [
+    { id: 'admin-news', label: language.startsWith('zh') ? '新闻管理' : 'News Admin', icon: Settings },
+    { id: 'admin-appointments', label: language.startsWith('zh') ? '预约管理' : 'Appointments', icon: Calendar },
+    { id: 'admin-subscriptions', label: language.startsWith('zh') ? '订阅管理' : 'Subscriptions', icon: Mail },
+  ] : [];
 
   const handleNavClick = (page: string) => {
     onNavigate(page);
@@ -32,46 +53,65 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
         <div className="max-w-[1440px] mx-auto px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <div 
+            <div
               className="flex items-center space-x-3 cursor-pointer group"
               onClick={() => handleNavClick('home')}
             >
-              <div className="text-2xl font-light text-white tracking-tight">
-                S&L
+              <div className="flex items-center gap-2">
+                <Logo size="sm" className="transition-transform duration-300 group-hover:scale-105" />
               </div>
             </div>
 
-            {/* Right Side - Language Switcher & Menu Button */}
-            <div className="flex items-center space-x-6">
+            {/* Right Side - Language Switcher, User Menu/Auth Buttons & Menu Button */}
+            <div className="flex items-center space-x-3">
               {/* Language Switcher */}
-              <div className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-1.5 border border-white/10">
-                <Globe className="w-4 h-4 text-gray-400" />
-                <button
-                  onClick={() => setLanguage('zh')}
-                  className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
-                    language === 'zh'
-                      ? 'bg-[#00a4e4] text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
+              <div className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-2 border border-white/10">
+                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as any)}
+                  className="appearance-none bg-transparent border-none text-white text-sm font-medium cursor-pointer focus:outline-none pl-1"
                 >
-                  中
-                </button>
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
-                    language === 'en'
-                      ? 'bg-[#00a4e4] text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  EN
-                </button>
+                  <option value="zh-CN" className="bg-[#0a2540]">中文（简体）</option>
+                  <option value="zh-TW" className="bg-[#0a2540]">中文（繁體）</option>
+                  <option value="en" className="bg-[#0a2540]">English</option>
+                  <option value="ja" className="bg-[#0a2540]">日本语</option>
+                  <option value="es" className="bg-[#0a2540]">Español</option>
+                  <option value="fr" className="bg-[#0a2540]">Français</option>
+                  <option value="ar" className="bg-[#0a2540]">العربية</option>
+                  <option value="hi" className="bg-[#0a2540]">हिन्दी</option>
+                </select>
               </div>
+
+              {/* User Menu (when logged in) */}
+              {isAuthenticated() && (
+                <UserMenu onNavigate={onNavigate} />
+              )}
+
+              {/* Auth Buttons (when not logged in) */}
+              {!isAuthenticated() && (
+                <div className="hidden md:flex items-center gap-2">
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white hover:text-[#00a4e4] transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    {language.startsWith('zh') ? '登录' : 'Login'}
+                  </button>
+                  <button
+                    onClick={() => setIsRegisterModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    {language.startsWith('zh') ? '注册' : 'Register'}
+                  </button>
+                </div>
+              )}
 
               {/* Hamburger Menu Button */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 text-white hover:text-[#00a4e4] transition-colors"
+                className="p-2 text-white hover:text-[#00a4e4] transition-colors md:hidden"
                 aria-label="Open menu"
               >
                 <Menu className="w-7 h-7" />
@@ -122,13 +162,13 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               {/* Sidebar Header */}
               <div className="relative flex items-center justify-between px-8 py-6 border-b border-white/10 backdrop-blur-sm">
                 {/* Logo with glow */}
-                <motion.div 
-                  className="text-3xl font-light text-white tracking-tight relative"
+                <motion.div
+                  className="relative"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  S&L
+                  <Logo size="sm" />
                   <div className="absolute inset-0 blur-xl bg-gradient-to-r from-[#00a4e4]/30 to-[#3b5bdb]/30 -z-10"></div>
                 </motion.div>
 
@@ -160,7 +200,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   >
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
                     <div className="text-xs uppercase tracking-widest text-[#00a4e4]/80 font-medium">
-                      {language === 'zh' ? '导航' : 'Navigation'}
+                      {language.startsWith('zh') ? '导航' : 'Navigation'}
                     </div>
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
                   </motion.div>
@@ -237,8 +277,154 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   </nav>
                 </div>
 
+                {/* Auth Section (when not logged in) */}
+                {!isAuthenticated() && (
+                  <div className="mb-12">
+                    <motion.div
+                      className="flex items-center gap-2 mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
+                      <div className="text-xs uppercase tracking-widest text-[#00a4e4]/80 font-medium">
+                        {language.startsWith('zh') ? '账号' : 'Account'}
+                      </div>
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
+                    </motion.div>
+
+                    <div className="space-y-3">
+                      <motion.button
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.45 }}
+                        onClick={() => {
+                          setIsSidebarOpen(false);
+                          setIsLoginModalOpen(true);
+                        }}
+                        className="group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden border border-white/5 hover:border-[#00a4e4]/30 hover:bg-white/5"
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="relative flex items-center gap-4">
+                          <div className="p-2 rounded-lg transition-all duration-300 bg-white/5 text-gray-400 group-hover:bg-[#00a4e4]/10 group-hover:text-[#00a4e4]">
+                            <LogIn className="w-5 h-5" />
+                          </div>
+                          <span className="flex-1 transition-colors duration-300 text-gray-300 group-hover:text-white">
+                            {language.startsWith('zh') ? '登录' : 'Login'}
+                          </span>
+                        </div>
+                      </motion.button>
+
+                      <motion.button
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.5 }}
+                        onClick={() => {
+                          setIsSidebarOpen(false);
+                          setIsRegisterModalOpen(true);
+                        }}
+                        className="group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden bg-gradient-to-r from-[#00a4e4]/20 to-[#3b5bdb]/20 border border-[#00a4e4]/30 hover:from-[#00a4e4]/30 hover:to-[#3b5bdb]/30"
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="relative flex items-center gap-4">
+                          <div className="p-2 rounded-lg transition-all duration-300 bg-[#00a4e4]/20 text-[#00a4e4]">
+                            <UserPlus className="w-5 h-5" />
+                          </div>
+                          <span className="flex-1 transition-colors duration-300 text-white">
+                            {language.startsWith('zh') ? '注册' : 'Register'}
+                          </span>
+                        </div>
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Admin Section */}
+                {adminNavItems.length > 0 && (
+                  <div className="mb-12">
+                    <motion.div
+                      className="flex items-center gap-2 mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
+                      <div className="text-xs uppercase tracking-widest text-[#00a4e4]/80 font-medium">
+                        {language.startsWith('zh') ? '管理' : 'Admin'}
+                      </div>
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
+                    </motion.div>
+
+                    <nav className="space-y-2">
+                      {adminNavItems.map((item, index) => {
+                        const Icon = item.icon;
+                        const isActive = currentPage === item.id;
+
+                        return (
+                          <motion.button
+                            key={item.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.45 + index * 0.05 }}
+                            onClick={() => handleNavClick(item.id)}
+                            className={`group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden ${
+                              isActive
+                                ? 'bg-gradient-to-r from-[#00a4e4]/20 to-[#3b5bdb]/20 border border-[#00a4e4]/30'
+                                : 'border border-white/5 hover:border-[#00a4e4]/30 hover:bg-white/5'
+                            }`}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {isActive && (
+                              <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-[#00a4e4]/10 to-[#3b5bdb]/10"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                              />
+                            )}
+
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                              <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                                initial={{ x: '-100%' }}
+                                whileHover={{ x: '200%' }}
+                                transition={{ duration: 0.8 }}
+                                style={{ width: '50%', skewX: '-20deg' }}
+                              />
+                            </div>
+
+                            <div className="relative flex items-center gap-4">
+                              <div className={`p-2 rounded-lg transition-all duration-300 ${
+                                isActive
+                                  ? 'bg-[#00a4e4]/20 text-[#00a4e4]'
+                                  : 'bg-white/5 text-gray-400 group-hover:bg-[#00a4e4]/10 group-hover:text-[#00a4e4]'
+                              }`}>
+                                <Icon className="w-5 h-5" />
+                              </div>
+
+                              <span className={`flex-1 transition-colors duration-300 ${
+                                isActive
+                                  ? 'text-white'
+                                  : 'text-gray-300 group-hover:text-white'
+                              }`}>
+                                {item.label}
+                              </span>
+
+                              <ChevronRight className={`w-4 h-4 transition-all duration-300 ${
+                                isActive
+                                  ? 'text-[#00a4e4] opacity-100 translate-x-0'
+                                  : 'text-gray-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#00a4e4]'
+                              }`} />
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+
                 {/* Contact Info Section */}
-                <motion.div 
+                <motion.div
                   className="pt-8 border-t border-white/10"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -252,7 +438,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   >
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#3b5bdb]/30 to-transparent"></div>
                     <div className="text-xs uppercase tracking-widest text-[#3b5bdb]/80 font-medium">
-                      {language === 'zh' ? '联系方式' : 'Contact'}
+                      {language.startsWith('zh') ? '联系方式' : 'Contact'}
                     </div>
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#3b5bdb]/30 to-transparent"></div>
                   </motion.div>
@@ -271,7 +457,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-gray-400 text-xs mb-1">
-                            {language === 'zh' ? '邮箱' : 'Email'}
+                            {language.startsWith('zh') ? '邮箱' : 'Email'}
                           </div>
                           <a 
                             href="mailto:info@sl-consulting.com" 
@@ -296,7 +482,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                         </div>
                         <div className="flex-1">
                           <div className="text-gray-400 text-xs mb-1">
-                            {language === 'zh' ? '电话' : 'Phone'}
+                            {language.startsWith('zh') ? '电话' : 'Phone'}
                           </div>
                           <a 
                             href="tel:+8612345678900" 
@@ -321,10 +507,10 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                         </div>
                         <div className="flex-1">
                           <div className="text-gray-400 text-xs mb-1">
-                            {language === 'zh' ? '地址' : 'Address'}
+                            {language.startsWith('zh') ? '地址' : 'Address'}
                           </div>
                           <div className="text-sm text-gray-200">
-                            {language === 'zh' ? '中国 · 北京' : 'Beijing, China'}
+                            {language.startsWith('zh') ? '中国 · 北京' : 'Beijing, China'}
                           </div>
                         </div>
                       </div>
@@ -344,7 +530,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                       © 2025 S&L
                     </div>
                     <div>
-                      {language === 'zh' ? '版权所有' : 'All rights reserved'}
+                      {language.startsWith('zh') ? '版权所有' : 'All rights reserved'}
                     </div>
                   </div>
                   
@@ -361,6 +547,24 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
           </>
         )}
       </AnimatePresence>
+
+      {/* Auth Modals */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSwitchToRegister={() => {
+          setIsLoginModalOpen(false);
+          setIsRegisterModalOpen(true);
+        }}
+      />
+      <RegisterModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsRegisterModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
     </>
   );
 }

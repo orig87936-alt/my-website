@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重置新闻数据 - Reset News Data</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .section h2 {
+            color: #444;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button.danger {
+            background: #e74c3c;
+        }
+        button.danger:hover {
+            background: #c0392b;
+        }
+        button.success {
+            background: #27ae60;
+        }
+        button.success:hover {
+            background: #229954;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success-msg {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 新闻数据管理工具</h1>
+        <p class="subtitle">News Data Management Tool</p>
+
+        <div class="section">
+            <h2>📊 当前数据状态 / Current Data Status</h2>
+            <button onclick="checkData()">检查数据 / Check Data</button>
+            <div id="dataStatus"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔄 重置数据 / Reset Data</h2>
+            <div class="warning">
+                <strong>⚠️ 警告 / Warning:</strong> 这将清除所有 localStorage 中的新闻数据，恢复为默认数据。<br>
+                This will clear all news data in localStorage and restore default data.
+            </div>
+            <button class="danger" onclick="clearNewsData()">清除所有新闻数据 / Clear All News Data</button>
+            <button class="success" onclick="resetToDefault()">恢复默认数据 / Restore Default Data</button>
+            <div id="resetStatus" class="success-msg"></div>
+        </div>
+
+        <div class="section">
+            <h2>📝 数据详情 / Data Details</h2>
+            <button onclick="showDetails()">显示详细数据 / Show Details</button>
+            <pre id="dataDetails" style="display: none;"></pre>
+        </div>
+
+        <div class="info">
+            <strong>💡 提示 / Tips:</strong><br>
+            1. 如果新闻页面显示为空，请点击"恢复默认数据"<br>
+            2. 操作后请刷新主页面以查看更改<br>
+            3. 所有数据存储在浏览器的 localStorage 中<br><br>
+            1. If the news page is empty, click "Restore Default Data"<br>
+            2. Refresh the main page after operations to see changes<br>
+            3. All data is stored in browser's localStorage
+        </div>
+    </div>
+
+    <script>
+        function checkData() {
+            const liveNews = localStorage.getItem('liveNewsList');
+            const focusPoint = localStorage.getItem('focusPointNews');
+            const featured = localStorage.getItem('featuredArticles');
+            
+            let html = '<div class="status" style="background: #e3f2fd;">';
+            html += '<strong>实时新闻 / Live News:</strong> ';
+            if (liveNews) {
+                try {
+                    const data = JSON.parse(liveNews);
+                    html += `✅ 已存储 ${data.length} 条新闻 / ${data.length} items stored<br>`;
+                } catch (e) {
+                    html += '❌ 数据格式错误 / Invalid data format<br>';
+                }
+            } else {
+                html += '⚠️ 未找到数据（将使用默认数据）/ No data found (will use default)<br>';
+            }
+            
+            html += '<strong>焦点新闻 / Focus Point:</strong> ';
+            html += focusPoint ? '✅ 已存储 / Stored<br>' : '⚠️ 未找到 / Not found<br>';
+            
+            html += '<strong>特色文章 / Featured Articles:</strong> ';
+            if (featured) {
+                try {
+                    const data = JSON.parse(featured);
+                    html += `✅ 已存储 ${data.length} 篇文章 / ${data.length} articles stored`;
+                } catch (e) {
+                    html += '❌ 数据格式错误 / Invalid data format';
+                }
+            } else {
+                html += '⚠️ 未找到数据 / No data found';
+            }
+            html += '</div>';
+            
+            document.getElementById('dataStatus').innerHTML = html;
+        }
+
+        function clearNewsData() {
+            if (confirm('确定要清除所有新闻数据吗？\nAre you sure you want to clear all news data?')) {
+                localStorage.removeItem('liveNewsList');
+                localStorage.removeItem('focusPointNews');
+                localStorage.removeItem('featuredArticles');
+                
+                const status = document.getElementById('resetStatus');
+                status.style.display = 'block';
+                status.innerHTML = '✅ 已清除所有新闻数据！请刷新主页面。<br>All news data cleared! Please refresh the main page.';
+                
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+                
+                checkData();
+            }
+        }
+
+        function resetToDefault() {
+            if (confirm('确定要恢复默认新闻数据吗？这将覆盖当前所有自定义数据。\nRestore default news data? This will overwrite all custom data.')) {
+                // 清除现有数据
+                localStorage.removeItem('liveNewsList');
+                localStorage.removeItem('focusPointNews');
+                localStorage.removeItem('featuredArticles');
+                
+                const status = document.getElementById('resetStatus');
+                status.style.display = 'block';
+                status.innerHTML = '✅ 已恢复默认数据！请刷新主页面查看。<br>Default data restored! Please refresh the main page to see changes.';
+                
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+                
+                checkData();
+            }
+        }
+
+        function showDetails() {
+            const details = document.getElementById('dataDetails');
+            if (details.style.display === 'none') {
+                const liveNews = localStorage.getItem('liveNewsList');
+                const focusPoint = localStorage.getItem('focusPointNews');
+                const featured = localStorage.getItem('featuredArticles');
+                
+                let output = '=== 实时新闻 / Live News ===\n';
+                output += liveNews ? JSON.stringify(JSON.parse(liveNews), null, 2) : '未找到 / Not found';
+                output += '\n\n=== 焦点新闻 / Focus Point ===\n';
+                output += focusPoint ? JSON.stringify(JSON.parse(focusPoint), null, 2) : '未找到 / Not found';
+                output += '\n\n=== 特色文章 / Featured Articles ===\n';
+                output += featured ? JSON.stringify(JSON.parse(featured), null, 2) : '未找到 / Not found';
+                
+                details.textContent = output;
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        }
+
+        // 页面加载时自动检查数据
+        window.onload = function() {
+            checkData();
+        };
+    </script>
+</body>
+</html>
+

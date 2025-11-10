@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>自动导出数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a2540;
+            color: white;
+            text-align: center;
+        }
+        .status {
+            font-size: 24px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 164, 228, 0.2);
+            border-radius: 10px;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .data-box {
+            background: black;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            max-height: 500px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #00a4e4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0090cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 自动读取数据</h1>
+    <div class="status" id="status">正在读取数据...</div>
+    <div class="data-box" id="data-display"></div>
+    <button onclick="downloadData()">💾 下载数据文件</button>
+    <button onclick="copyToClipboard()">📋 复制到剪贴板</button>
+    <div id="copy-status" style="margin-top: 20px;"></div>
+
+    <script>
+        let allData = null;
+
+        // 页面加载时自动读取数据
+        window.onload = function() {
+            try {
+                allData = {
+                    featuredArticles: localStorage.getItem('featuredArticles'),
+                    focusPointNews: localStorage.getItem('focusPointNews'),
+                    liveNewsList: localStorage.getItem('liveNewsList')
+                };
+
+                // 解析JSON
+                Object.keys(allData).forEach(key => {
+                    if (allData[key]) {
+                        try {
+                            allData[key] = JSON.parse(allData[key]);
+                        } catch (e) {
+                            console.error('Failed to parse ' + key, e);
+                        }
+                    }
+                });
+
+                // 显示数据
+                const jsonString = JSON.stringify(allData, null, 2);
+                document.getElementById('data-display').innerHTML = '<pre>' + jsonString + '</pre>';
+                document.getElementById('status').innerHTML = '<span class="success">✅ 数据读取成功！</span>';
+                document.getElementById('status').innerHTML += '<br><small>共 ' + jsonString.length + ' 个字符</small>';
+
+                // 自动下载
+                setTimeout(() => {
+                    downloadData();
+                }, 1000);
+
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ 读取失败: ' + error.message;
+                console.error(error);
+            }
+        };
+
+        function downloadData() {
+            if (!allData) {
+                alert('没有数据可下载');
+                return;
+            }
+
+            const jsonString = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.download = 'news-data-' + timestamp + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            document.getElementById('copy-status').innerHTML = '<span class="success">✅ 文件已下载！请在下载文件夹中查找</span>';
+        }
+
+        function copyToClipboard() {
+            if (!allData) {
+                alert('没有数据可复制');
+                return;
+            }
+
+            const jsonString = JSON.stringify(allData, null, 2);
+            navigator.clipboard.writeText(jsonString).then(() => {
+                document.getElementById('copy-status').innerHTML = '<span class="success">✅ 已复制到剪贴板！可以直接粘贴了</span>';
+                setTimeout(() => {
+                    document.getElementById('copy-status').innerHTML = '';
+                }, 3000);
+            }).catch(err => {
+                alert('复制失败: ' + err);
+            });
+        }
+    </script>
+</body>
+</html>
+
