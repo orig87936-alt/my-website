@@ -38,19 +38,13 @@ async def register(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Register a new user with email verification
-
-    **Flow:**
-    1. User requests verification code via `/verification/send`
-    2. User receives code via email
-    3. User submits registration with code
-    4. System verifies code and creates account
+    Register a new user
 
     **Request Body:**
     - **email**: User email address
-    - **password**: User password (min 8 chars, must contain letters and numbers)
+    - **password**: User password (min 8 chars)
     - **display_name**: User display name
-    - **verification_code**: 6-digit code from email
+    - **verification_code**: (Optional) 6-digit code from email
 
     **Response:**
     - **access_token**: JWT access token
@@ -59,16 +53,17 @@ async def register(
     - **expires_in**: Token expiration time in seconds
     - **user**: User information
     """
-    # Verify email code
-    is_valid = await VerificationService.verify_code(
-        db, user_data.email, user_data.verification_code, "register"
-    )
-
-    if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="验证码无效或已过期"
+    # Verify email code if provided
+    if user_data.verification_code:
+        is_valid = await VerificationService.verify_code(
+            db, user_data.email, user_data.verification_code, "register"
         )
+
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="验证码无效或已过期"
+            )
 
     # Register user
     user = await AuthService.register_user(
@@ -193,6 +188,62 @@ async def google_login(
         db=db,
         google_token=login_data.token
     )
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=UserResponse.model_validate(user)
+    )
+
+
+@router.post("/google/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def google_signup(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Register with Google-style signup (email + password, no verification)
+
+    **Request Body:**
+    - **email**: Email address
+    - **password**: Password (min 8 characters)
+    - **display_name**: Optional display name
+
+    **Response:**
+    - **access_token**: JWT access token
+    - **refresh_token**: Refresh token
+    - **token_type**: "bearer"
+    - **expires_in**: Token expiration time in seconds
+    - **user**: User information
+
+    **Notes:**
+    - No email verification required
+    - Account is created and activated immediately
+    - Auth provider is set to GOOGLE
+    """
+    # Check if user already exists
+    existing_user = await UserService.get_by_email(db, user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该邮箱已被注册" if user_data.email else "Email already registered"
+        )
+
+    # Create user directly without verification
+    user = await UserService.create_user(
+        db=db,
+        email=user_data.email,
+        password=user_data.password,
+        display_name=user_data.display_name or user_data.email.split('@')[0],
+        auth_provider=AuthProvider.GOOGLE,
+        is_verified=True,  # No verification needed
+        is_active=True
+    )
+
+    # Create tokens
+    access_token, refresh_token = await AuthService.create_user_tokens(db, user)
 
     return TokenResponse(
         access_token=access_token,

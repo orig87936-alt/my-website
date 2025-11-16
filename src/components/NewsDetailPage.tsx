@@ -44,6 +44,14 @@ export function NewsDetailPage({
     loadArticle();
   }, [articleId]);
 
+  // 当文章ID改变时，滚动到页面顶部
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth' // 平滑滚动
+    });
+  }, [articleId]);
+
   const handleEditorClose = async () => {
     setShowEditor(false);
     if (onStopEdit) {

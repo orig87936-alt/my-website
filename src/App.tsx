@@ -1,21 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
-import { BusinessPage } from './components/BusinessPage';
-import { NewsPage } from './components/NewsPage';
-import { NewsDetailPage } from './components/NewsDetailPage';
-import { ConsultingPage } from './components/ConsultingPage';
-import { ContactPage } from './components/ContactPage';
-import { DataExporter } from './components/DataExporter';
-import { NewsAdminPage } from './components/NewsAdminPage';
-import { AppointmentsAdminPage } from './components/AppointmentsAdminPage';
-import { SubscriptionAdminPage } from './components/SubscriptionAdminPage';
-import { SubscriptionConfirm } from './pages/SubscriptionConfirm';
-import { Unsubscribe } from './pages/Unsubscribe';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider } from './contexts/LoadingContext';
+
+// 懒加载非关键页面组件
+const BusinessPage = lazy(() => import('./components/BusinessPage').then(m => ({ default: m.BusinessPage })));
+const NewsPage = lazy(() => import('./components/NewsPage').then(m => ({ default: m.NewsPage })));
+const NewsDetailPage = lazy(() => import('./components/NewsDetailPage').then(m => ({ default: m.NewsDetailPage })));
+const ConsultingPage = lazy(() => import('./components/ConsultingPage').then(m => ({ default: m.ConsultingPage })));
+const ContactPage = lazy(() => import('./components/ContactPage').then(m => ({ default: m.ContactPage })));
+
+// 懒加载管理员页面（仅管理员需要）
+const DataExporter = lazy(() => import('./components/DataExporter').then(m => ({ default: m.DataExporter })));
+const NewsAdminPage = lazy(() => import('./components/NewsAdminPage').then(m => ({ default: m.NewsAdminPage })));
+const AppointmentsAdminPage = lazy(() => import('./components/AppointmentsAdminPage').then(m => ({ default: m.AppointmentsAdminPage })));
+const SubscriptionAdminPage = lazy(() => import('./components/SubscriptionAdminPage').then(m => ({ default: m.SubscriptionAdminPage })));
+
+// 懒加载订阅相关页面
+const SubscriptionConfirm = lazy(() => import('./pages/SubscriptionConfirm').then(m => ({ default: m.SubscriptionConfirm })));
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe').then(m => ({ default: m.Unsubscribe })));
+
+// 加载中组件
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 function AppContent() {
   const { user } = useAuth();
@@ -42,12 +55,22 @@ function AppContent() {
     setArticleId(id);
     setIsEditing(false);
     setCurrentPage('news-detail');
+    // 滚动到页面顶部
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const navigateToEdit = (id: string) => {
     setArticleId(id);
     setIsEditing(true);
     setCurrentPage('news-detail');
+    // 滚动到页面顶部
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const navigateBack = () => {
@@ -124,7 +147,9 @@ function AppContent() {
   return (
     <div className="min-h-screen">
       {!hideNavigation && <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />}
-      {renderPage()}
+      <Suspense fallback={<PageLoader />}>
+        {renderPage()}
+      </Suspense>
     </div>
   );
 }

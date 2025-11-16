@@ -18,6 +18,8 @@ class ContentBlock(BaseModel):
     language: Optional[str] = Field(None, description="Code language for code type")
     url: Optional[str] = Field(None, description="Image URL for image type")
     caption: Optional[str] = Field(None, description="Image caption for image type")
+    width: Optional[int] = Field(None, description="Image width in pixels for image type")
+    height: Optional[int] = Field(None, description="Image height in pixels for image type")
 
     @field_validator('type')
     @classmethod
@@ -42,8 +44,8 @@ class ArticleBase(BaseModel):
     status: str = Field(default="published", description="Article status")
     title_zh: str = Field(..., min_length=1, max_length=500, description="Chinese title")
     title_en: str = Field(..., min_length=1, max_length=500, description="English title")
-    summary_zh: str = Field(..., min_length=20, max_length=150, description="Chinese summary (20-150 chars)")
-    summary_en: str = Field(..., min_length=20, max_length=300, description="English summary (20-300 chars)")
+    summary_zh: str = Field(..., min_length=1, description="Chinese summary")
+    summary_en: str = Field(..., min_length=1, description="English summary")
     lead_zh: Optional[str] = Field(None, description="Chinese lead paragraph")
     lead_en: Optional[str] = Field(None, description="English lead paragraph")
     image_url: Optional[str] = Field(None, description="Article image URL")
@@ -83,8 +85,8 @@ class ArticleUpdate(BaseModel):
     status: Optional[str] = None
     title_zh: Optional[str] = Field(None, min_length=1, max_length=500)
     title_en: Optional[str] = Field(None, min_length=1, max_length=500)
-    summary_zh: Optional[str] = Field(None, min_length=20, max_length=150)
-    summary_en: Optional[str] = Field(None, min_length=20, max_length=300)
+    summary_zh: Optional[str] = Field(None, min_length=1)
+    summary_en: Optional[str] = Field(None, min_length=1)
     lead_zh: Optional[str] = None
     lead_en: Optional[str] = None
     content_zh: Optional[List[ContentBlock]] = None

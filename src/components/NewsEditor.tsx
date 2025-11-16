@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Save, X, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { getNewsArticle, updateNewsArticle, NewsArticle } from '../data/newsData';
+import { getNewsArticle, updateNewsArticle, createNewsArticle, NewsArticle } from '../data/newsData';
 
 interface NewsEditorProps {
   articleId: string;
@@ -25,6 +25,26 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
         console.log('ContentZh length:', loadedArticle.contentZh?.length);
         console.log('ContentEn length:', loadedArticle.contentEn?.length);
         setArticle(loadedArticle);
+      } else {
+        // 如果文章不存在，创建一个新的空白文章模板
+        console.log('Article not found, creating new article template');
+        const newArticle: NewsArticle = {
+          id: articleId,
+          titleZh: '',
+          titleEn: '',
+          dateZh: new Date().toLocaleDateString('zh-CN'),
+          dateEn: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          leadZh: '',
+          leadEn: '',
+          contentZh: [],
+          contentEn: [],
+          category: 'headline',
+          author: 'Siberia Fund',
+          image: 'https://images.unsplash.com/photo-1655720828018-edd2daec9349?auto=format&fit=crop&q=80&w=2832&h=1600',
+          imageCaptionZh: '',
+          imageCaptionEn: ''
+        };
+        setArticle(newArticle);
       }
     }
     loadArticle();
@@ -61,22 +81,106 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
   }
 
   const handleSave = async () => {
+    // ✅ 基本验证：确保必需字段不为空
+    const titleZhLength = article.titleZh?.trim().length || 0;
+    const titleEnLength = article.titleEn?.trim().length || 0;
+    const leadZhLength = article.leadZh?.trim().length || 0;
+    const leadEnLength = article.leadEn?.trim().length || 0;
+    const contentZhLength = article.contentZh?.length || 0;
+    const contentEnLength = article.contentEn?.length || 0;
+
+    // 验证标题
+    if (titleZhLength === 0) {
+      alert(language === 'zh' ? '中文标题不能为空' : 'Chinese title cannot be empty');
+      return;
+    }
+    if (titleEnLength === 0) {
+      alert(language === 'zh' ? '英文标题不能为空' : 'English title cannot be empty');
+      return;
+    }
+
+    // 验证导语（摘要）
+    if (leadZhLength === 0) {
+      alert(language === 'zh' ? '中文导语不能为空' : 'Chinese lead cannot be empty');
+      return;
+    }
+    if (leadZhLength < 20) {
+      alert(language === 'zh' ? '中文导语至少需要20个字符' : 'Chinese lead must be at least 20 characters');
+      return;
+    }
+    if (leadEnLength === 0) {
+      alert(language === 'zh' ? '英文导语不能为空' : 'English lead cannot be empty');
+      return;
+    }
+    if (leadEnLength < 20) {
+      alert(language === 'zh' ? '英文导语至少需要20个字符' : 'English lead must be at least 20 characters');
+      return;
+    }
+
+    // 验证内容
+    if (contentZhLength === 0) {
+      alert(language === 'zh' ? '中文内容不能为空' : 'Chinese content cannot be empty');
+      return;
+    }
+    if (contentEnLength === 0) {
+      alert(language === 'zh' ? '英文内容不能为空' : 'English content cannot be empty');
+      return;
+    }
+
     setIsSaving(true);
     setSaveSuccess(false);
 
     try {
-      // 保存到 API
-      await updateNewsArticle(articleId, article);
+      // 判断是创建还是更新
+      // 如果 articleId 不是 UUID 格式（例如 'news-insights'），则创建新文章
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(articleId);
+
+      console.log('💾 Saving article...');
+      console.log('📋 Article data:', {
+        id: article.id,
+        titleZh: article.titleZh,
+        titleEn: article.titleEn,
+        leadZh: article.leadZh?.substring(0, 50) + '...',
+        leadEn: article.leadEn?.substring(0, 50) + '...',
+        category: article.category,
+        author: article.author,
+        contentZhBlocks: contentZhLength,
+        contentEnBlocks: contentEnLength
+      });
+      console.log('🔍 Article ID:', articleId, 'Is UUID:', isUUID);
+
+      if (isUUID) {
+        // 更新现有文章
+        console.log('📝 Updating existing article...');
+        await updateNewsArticle(articleId, article);
+      } else {
+        // 创建新文章（移除旧的 ID，让后端生成新的 UUID）
+        console.log('✨ Creating new article...');
+        const articleToCreate = { ...article };
+        delete articleToCreate.id; // 移除旧的非 UUID ID
+        await createNewsArticle(articleToCreate);
+      }
 
       setIsSaving(false);
       setSaveSuccess(true);
+
+      // 显示成功消息
+      alert(language === 'zh' ? '✅ 文章保存成功！' : '✅ Article saved successfully!');
     } catch (error) {
-      console.error('Failed to save article:', error);
+      console.error('❌ Failed to save article:', error);
       setIsSaving(false);
+
+      // 显示详细错误信息
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(
+        language === 'zh'
+          ? `❌ 保存失败：${errorMessage}`
+          : `❌ Save failed: ${errorMessage}`
+      );
       // TODO: Show error message to user
-      alert(isChinese ? '保存失败，请重试' : 'Failed to save, please try again');
+      alert(language === 'zh' ? '保存失败，请重试' : 'Failed to save, please try again');
     }
-    
+
     // 3秒后关闭成功提示
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -251,9 +355,14 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
 
             {/* 中文导语 */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {language === 'zh' ? '中文导语' : 'Chinese Lead'}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  {language === 'zh' ? '中文导语' : 'Chinese Lead'}
+                </label>
+                <span className="text-xs text-gray-400">
+                  {article.leadZh?.length || 0} {language === 'zh' ? '字符' : 'characters'}
+                </span>
+              </div>
               <textarea
                 value={article.leadZh}
                 onChange={(e) => setArticle({ ...article, leadZh: e.target.value })}
@@ -264,9 +373,14 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
 
             {/* 英文导语 */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {language === 'zh' ? '英文导语' : 'English Lead'}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  {language === 'zh' ? '英文导语' : 'English Lead'}
+                </label>
+                <span className="text-xs text-gray-400">
+                  {article.leadEn?.length || 0} {language === 'zh' ? '字符' : 'characters'}
+                </span>
+              </div>
               <textarea
                 value={article.leadEn}
                 onChange={(e) => setArticle({ ...article, leadEn: e.target.value })}
@@ -276,24 +390,11 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
             </div>
           </div>
 
-          {/* 分隔线 - 测试可见性 */}
-          <div className="border-t-4 border-yellow-500 my-8 py-4 bg-yellow-900/30">
-            <p className="text-yellow-400 text-center text-xl font-bold animate-pulse">
-              ⚠️⚠️⚠️ 如果你能看到这行黄色文字，说明滚动正常 ⚠️⚠️⚠️
-            </p>
-            <p className="text-red-500 text-center text-2xl font-bold mt-4">
-              🔴 这是第二行测试文字 - 应该非常显眼！🔴
-            </p>
-          </div>
-
           {/* 中文内容 */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <label className="block text-sm font-medium text-gray-300">
                 {language === 'zh' ? '中文内容' : 'Chinese Content'}
-                <span className="ml-2 text-xs text-yellow-400">
-                  (DEBUG: {article.contentZh?.length || 0} blocks)
-                </span>
               </label>
               <button
                 onClick={() => addContentBlock('zh')}

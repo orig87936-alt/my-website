@@ -292,12 +292,15 @@ async def get_subscriptions(
         status=status,
         subscription_type=subscription_type
     )
-    
+
+    # Calculate page number from skip and limit
+    page = (skip // limit) + 1 if limit > 0 else 1
+
     return SubscriptionListResponse(
-        subscriptions=[SubscriptionResponse.model_validate(s) for s in subscriptions],
+        items=[SubscriptionResponse.model_validate(s) for s in subscriptions],
         total=len(subscriptions),
-        skip=skip,
-        limit=limit
+        page=page,
+        page_size=limit
     )
 
 

@@ -39,45 +39,66 @@ class SubscriptionService:
         """
         # Check if email already subscribed
         result = await db.execute(
-            select(Subscription).where(
-                and_(
-                    Subscription.email == email,
-                    Subscription.status != SubscriptionStatus.UNSUBSCRIBED
-                )
-            )
+            select(Subscription).where(Subscription.email == email)
         )
         existing = result.scalar_one_or_none()
-        
+
         if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="该邮箱已订阅"
-            )
-        
+            # If already active, update preferences
+            if existing.status == SubscriptionStatus.ACTIVE:
+                existing.subscription_type = subscription_type
+                existing.frequency = frequency
+                existing.updated_at = datetime.utcnow()
+                await db.commit()
+                await db.refresh(existing)
+                return existing
+
+            # If unsubscribed, reactivate
+            elif existing.status == SubscriptionStatus.UNSUBSCRIBED:
+                existing.subscription_type = subscription_type
+                existing.frequency = frequency
+                existing.status = SubscriptionStatus.ACTIVE
+                existing.confirmed_at = datetime.utcnow()
+                existing.unsubscribed_at = None
+                existing.updated_at = datetime.utcnow()
+                await db.commit()
+                await db.refresh(existing)
+                return existing
+
+            # If pending, update and keep pending
+            else:
+                existing.subscription_type = subscription_type
+                existing.frequency = frequency
+                existing.updated_at = datetime.utcnow()
+                await db.commit()
+                await db.refresh(existing)
+                return existing
+
         # Generate tokens
         confirmation_token = generate_token()
         unsubscribe_token = generate_token()
-        
-        # Create subscription
+
+        # Create subscription - directly set as ACTIVE (no email verification needed)
         subscription = Subscription(
             email=email,
             subscription_type=subscription_type,
             frequency=frequency,
-            status=SubscriptionStatus.PENDING,
+            status=SubscriptionStatus.ACTIVE,  # Changed from PENDING to ACTIVE
             confirmation_token=confirmation_token,
-            unsubscribe_token=unsubscribe_token
+            unsubscribe_token=unsubscribe_token,
+            confirmed_at=datetime.utcnow()  # Set confirmation time
         )
-        
+
         db.add(subscription)
         await db.commit()
         await db.refresh(subscription)
-        
-        # Send confirmation email
-        await EmailService.send_subscription_confirmation(
-            to_email=email,
-            confirmation_token=confirmation_token
-        )
-        
+
+        # Email confirmation is disabled - subscription is immediately active
+        # await EmailService.send_subscription_confirmation(
+        #     to_email=email,
+        #     confirmation_token=confirmation_token
+        # )
+
         return subscription
     
     @staticmethod

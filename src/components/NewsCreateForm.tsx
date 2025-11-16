@@ -6,7 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { NEWS_CATEGORIES } from '../constants/newsCategories';
 import { ImageUploader } from './ImageUploader';
+import { TipTapEditor } from './TipTapEditor';
 import { articlesAPI, ArticleCreate, ContentBlock, batchTranslate } from '../services/api';
+import { uploadImage } from '../services/uploadAPI';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslateButton } from './TranslateButton';
 import { toast } from 'sonner';
@@ -163,13 +165,9 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
     }
     if (!formData.summary_zh.trim()) {
       newErrors.summary_zh = '请输入中文摘要';
-    } else if (formData.summary_zh.length < 20 || formData.summary_zh.length > 150) {
-      newErrors.summary_zh = '中文摘要长度应在 20-150 字符之间';
     }
     if (!formData.summary_en.trim()) {
       newErrors.summary_en = '请输入英文摘要';
-    } else if (formData.summary_en.length < 20 || formData.summary_en.length > 300) {
-      newErrors.summary_en = '英文摘要长度应在 20-300 字符之间';
     }
     if (!formData.content_zh.trim()) {
       newErrors.content_zh = '请输入中文内容';
@@ -321,16 +319,42 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
         continue;
       }
 
-      // T065: 图片检测 ![alt](url)
-      const imageMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-      if (imageMatch) {
-        const alt = imageMatch[1];
-        const url = imageMatch[2];
+      // T065: 图片检测 ![alt](url) 或 HTML <img> 标签
+      const markdownImageMatch = trimmedLine.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+      const htmlImageMatch = trimmedLine.match(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i);
+
+      if (markdownImageMatch) {
+        const alt = markdownImageMatch[1];
+        const url = markdownImageMatch[2];
         blocks.push({
           type: 'image' as const,
           url,
           alt,
           caption: alt
+        });
+        i++;
+        continue;
+      }
+
+      if (htmlImageMatch) {
+        const url = htmlImageMatch[1];
+        // 尝试提取 alt 属性
+        const altMatch = trimmedLine.match(/alt=["']([^"']*)["']/i);
+        const alt = altMatch ? altMatch[1] : '';
+        // 尝试提取 width 属性
+        const widthMatch = trimmedLine.match(/width=["']?(\d+)["']?/i);
+        const width = widthMatch ? parseInt(widthMatch[1], 10) : undefined;
+        // 尝试提取 height 属性
+        const heightMatch = trimmedLine.match(/height=["']?(\d+)["']?/i);
+        const height = heightMatch ? parseInt(heightMatch[1], 10) : undefined;
+
+        blocks.push({
+          type: 'image' as const,
+          url,
+          alt,
+          caption: alt,
+          width,
+          height
         });
         i++;
         continue;
@@ -518,17 +542,17 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
             {/* 中文摘要 */}
             <div className="form-group">
               <label className="form-label required">
-                {language === 'zh' ? '中文摘要' : 'Chinese Summary'} (20-150字符)
+                {language === 'zh' ? '中文摘要' : 'Chinese Summary'}
               </label>
               <textarea
                 value={formData.summary_zh}
                 onChange={(e) => handleChange('summary_zh', e.target.value)}
                 className={`form-textarea ${errors.summary_zh ? 'error' : ''}`}
-                placeholder="请输入中文摘要（20-150字符）"
+                placeholder="请输入中文摘要"
                 rows={3}
               />
               <div className="char-count">
-                {formData.summary_zh.length} / 150
+                {formData.summary_zh.length}
               </div>
               {errors.summary_zh && <span className="error-text">{errors.summary_zh}</span>}
             </div>
@@ -537,7 +561,7 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
             <div className="form-group">
               <div className="flex items-center justify-between mb-2">
                 <label className="form-label required">
-                  {language === 'zh' ? '英文摘要' : 'English Summary'} (20-300 characters)
+                  {language === 'zh' ? '英文摘要' : 'English Summary'}
                 </label>
                 <TranslateButton
                   text={formData.summary_zh}
@@ -552,11 +576,11 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
                 value={formData.summary_en}
                 onChange={(e) => handleChange('summary_en', e.target.value)}
                 className={`form-textarea ${errors.summary_en ? 'error' : ''}`}
-                placeholder="Enter English summary (20-300 characters)"
+                placeholder="Enter English summary"
                 rows={4}
               />
               <div className="char-count">
-                {formData.summary_en.length} / 300
+                {formData.summary_en.length}
               </div>
               {errors.summary_en && <span className="error-text">{errors.summary_en}</span>}
             </div>
@@ -620,12 +644,15 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
               <label className="form-label required">
                 {language === 'zh' ? '中文内容' : 'Chinese Content'}
               </label>
-              <textarea
+              <TipTapEditor
                 value={formData.content_zh}
-                onChange={(e) => handleChange('content_zh', e.target.value)}
-                className={`form-textarea ${errors.content_zh ? 'error' : ''}`}
-                placeholder="请输入中文内容。支持简单的 Markdown 格式：&#10;# 一级标题&#10;## 二级标题&#10;普通段落"
-                rows={10}
+                onChange={(value) => handleChange('content_zh', value)}
+                placeholder={language === 'zh' ? '请输入中文内容。支持 Markdown 格式：标题、粗体、列表、图片等' : 'Enter Chinese content. Markdown supported: headings, bold, lists, images, etc.'}
+                minHeight="400px"
+                onImageUpload={async (file) => {
+                  const url = await uploadImage(file);
+                  return url;
+                }}
               />
               {errors.content_zh && <span className="error-text">{errors.content_zh}</span>}
             </div>
@@ -645,12 +672,15 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
                   variant="outline"
                 />
               </div>
-              <textarea
+              <TipTapEditor
                 value={formData.content_en}
-                onChange={(e) => handleChange('content_en', e.target.value)}
-                className={`form-textarea ${errors.content_en ? 'error' : ''}`}
-                placeholder="Enter English content. Supports simple Markdown:&#10;# Heading 1&#10;## Heading 2&#10;Normal paragraph"
-                rows={10}
+                onChange={(value) => handleChange('content_en', value)}
+                placeholder={language === 'zh' ? '请输入英文内容。支持 Markdown 格式：标题、粗体、列表、图片等' : 'Enter English content. Markdown supported: headings, bold, lists, images, etc.'}
+                minHeight="400px"
+                onImageUpload={async (file) => {
+                  const url = await uploadImage(file);
+                  return url;
+                }}
               />
               {errors.content_en && <span className="error-text">{errors.content_en}</span>}
             </div>

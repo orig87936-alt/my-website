@@ -4,6 +4,7 @@ Translation service for text translation with caching
 import hashlib
 import asyncio
 import time
+import re
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple, Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,14 +36,82 @@ class TranslationService:
     def _compute_hash(text: str) -> str:
         """
         Compute SHA-256 hash of text for cache key
-        
+
         Args:
             text: Text to hash
-            
+
         Returns:
             SHA-256 hash string
         """
         return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def _extract_markdown_images(text: str) -> Tuple[str, List[Dict[str, str]]]:
+        """
+        Extract Markdown images from text and replace with placeholders
+
+        Args:
+            text: Markdown text containing images
+
+        Returns:
+            Tuple of (text_with_placeholders, list_of_image_info)
+
+        Example:
+            Input: "Hello ![alt](url) world"
+            Output: ("Hello {{IMAGE_0}} world", [{"alt": "alt", "url": "url", "full": "![alt](url)"}])
+        """
+        # Regex pattern for Markdown images: ![alt](url)
+        # Supports optional title: ![alt](url "title")
+        image_pattern = r'!\[([^\]]*)\]\(([^\s\)]+)(?:\s+"([^"]*)")?\)'
+
+        images = []
+
+        def replace_image(match):
+            index = len(images)
+            alt_text = match.group(1)
+            url = match.group(2)
+            title = match.group(3) if match.group(3) else ""
+            full_match = match.group(0)
+
+            images.append({
+                'alt': alt_text,
+                'url': url,
+                'title': title,
+                'full': full_match,
+                'placeholder': f'{{{{IMAGE_{index}}}}}'
+            })
+
+            return f'{{{{IMAGE_{index}}}}}'
+
+        # Replace all images with placeholders
+        text_with_placeholders = re.sub(image_pattern, replace_image, text)
+
+        return text_with_placeholders, images
+
+    @staticmethod
+    def _restore_markdown_images(text: str, images: List[Dict[str, str]]) -> str:
+        """
+        Restore Markdown images from placeholders
+
+        Args:
+            text: Translated text with placeholders
+            images: List of image info from _extract_markdown_images
+
+        Returns:
+            Text with images restored
+
+        Example:
+            Input: ("Hello {{IMAGE_0}} world", [{"alt": "alt", "url": "url", "full": "![alt](url)"}])
+            Output: "Hello ![alt](url) world"
+        """
+        result = text
+
+        for image in images:
+            placeholder = image['placeholder']
+            # Restore the original image markdown
+            result = result.replace(placeholder, image['full'])
+
+        return result
     
     async def detect_language(self, text: str) -> Tuple[str, float]:
         """
@@ -163,67 +232,98 @@ class TranslationService:
         self,
         text: str,
         source_lang: Optional[str] = None,
-        target_lang: str = 'en'
+        target_lang: str = 'en',
+        preserve_markdown_images: bool = True
     ) -> Dict[str, Any]:
         """
-        Translate text with caching
-        
+        Translate text with caching and Markdown image preservation
+
         Args:
             text: Text to translate
             source_lang: Source language (auto-detect if None)
             target_lang: Target language
-            
+            preserve_markdown_images: Whether to preserve Markdown images (default: True)
+
         Returns:
-            Dict with keys: translated_text, source_lang, target_lang, cached
+            Dict with keys: translated_text, source_lang, target_lang, cached, images_count
         """
+        # Extract Markdown images before translation
+        images = []
+        text_to_translate = text
+
+        if preserve_markdown_images:
+            text_to_translate, images = self._extract_markdown_images(text)
+            if images:
+                print(f"📸 Extracted {len(images)} Markdown images for preservation")
+
         # Detect source language if not provided
         if not source_lang:
+            # Use original text for language detection (without placeholders)
             source_lang, confidence = await self.detect_language(text)
             print(f"🔍 Detected language: {source_lang} (confidence: {confidence:.2f})")
-        
+
         # Check if source and target are the same
         if source_lang == target_lang:
             return {
-                'translated_text': text,
+                'translated_text': text,  # Return original text with images
                 'source_lang': source_lang,
                 'target_lang': target_lang,
-                'cached': False
+                'cached': False,
+                'images_count': len(images)
             }
-        
-        # Compute hash for cache lookup
-        text_hash = self._compute_hash(text)
-        
+
+        # Compute hash for cache lookup (use text with placeholders)
+        text_hash = self._compute_hash(text_to_translate)
+
         # Try to get from cache
         cached_translation = await self._get_from_cache(text_hash, source_lang, target_lang)
-        
+
         if cached_translation:
+            # Restore images in cached translation
+            if preserve_markdown_images and images:
+                cached_translation = self._restore_markdown_images(cached_translation, images)
+                print(f"📸 Restored {len(images)} images in cached translation")
+
             return {
                 'translated_text': cached_translation,
                 'source_lang': source_lang,
                 'target_lang': target_lang,
-                'cached': True
+                'cached': True,
+                'images_count': len(images)
             }
-        
+
         # Translate using DeepSeek
-        text_length = len(text)
+        text_length = len(text_to_translate)
         print(f"🔄 Translating {text_length} chars: {source_lang} → {target_lang}...")
 
         try:
-            translated_text = await self.deepseek.translate_text(text, source_lang, target_lang)
+            translated_text = await self.deepseek.translate_text(text_to_translate, source_lang, target_lang)
             translated_length = len(translated_text) if translated_text else 0
             print(f"✅ Translation successful: {translated_length} chars")
         except Exception as e:
             print(f"❌ Translation failed: {e}")
             raise
 
-        # Save to cache
-        await self._save_to_cache(text, text_hash, translated_text, source_lang, target_lang)
+        # Restore images in translated text
+        if preserve_markdown_images and images:
+            translated_text = self._restore_markdown_images(translated_text, images)
+            print(f"📸 Restored {len(images)} images in translated text")
+
+        # Save to cache (with placeholders, not with restored images)
+        # This ensures cache consistency
+        text_to_cache = translated_text
+        if preserve_markdown_images and images:
+            # Remove images again for caching
+            text_to_cache, _ = self._extract_markdown_images(translated_text)
+
+        await self._save_to_cache(text_to_translate, text_hash, text_to_cache, source_lang, target_lang)
 
         return {
             'translated_text': translated_text,
             'source_lang': source_lang,
             'target_lang': target_lang,
-            'cached': False
+            'cached': False,
+            'images_count': len(images)
         }
     
     async def batch_translate(

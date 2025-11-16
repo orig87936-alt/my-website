@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';  // T074: XSS 防护
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { motion } from 'motion/react';
@@ -14,6 +13,8 @@ interface ContentBlock {
   caption?: string;
   language?: string;
   level?: number;
+  width?: number;
+  height?: number;
 }
 
 interface MarkdownRendererProps {
@@ -160,30 +161,46 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
         );
 
       case 'image':
+        // 计算图片样式
+        const imageStyle: React.CSSProperties = {};
+        if (block.width && block.height) {
+          // 如果有自定义尺寸，使用自定义尺寸
+          imageStyle.width = `${block.width}px`;
+          imageStyle.height = `${block.height}px`;
+        } else if (block.width) {
+          // 只有宽度，高度自动
+          imageStyle.width = `${block.width}px`;
+          imageStyle.height = 'auto';
+        } else if (block.height) {
+          // 只有高度，宽度自动
+          imageStyle.width = 'auto';
+          imageStyle.height = `${block.height}px`;
+        }
+        // 如果没有自定义尺寸，使用默认的 w-full h-auto
+
         return (
           <motion.div
             key={index}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
-            className="my-8"
+            className="my-8 flex justify-center"
           >
-            <div className="relative overflow-hidden rounded-xl shadow-2xl">
+            <div className="relative rounded-xl shadow-2xl" style={block.width || block.height ? { display: 'inline-block' } : {}}>
               {/* Lazy loading placeholder */}
               {!imageLoadStates[index] && (
-                <div className="absolute inset-0 bg-white/5 animate-pulse" />
+                <div className="absolute inset-0 bg-white/5 animate-pulse rounded-xl" />
               )}
               <img
                 src={block.url}
                 alt={block.caption || ''}
                 loading="lazy"
                 onLoad={() => handleImageLoad(index)}
-                className={`w-full h-auto object-cover transition-opacity duration-300 ${
+                className={`${block.width || block.height ? '' : 'w-full h-auto'} object-contain transition-opacity duration-300 rounded-xl ${
                   imageLoadStates[index] ? 'opacity-100' : 'opacity-0'
                 }`}
-                style={{ maxHeight: '600px' }}
+                style={imageStyle}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a2540]/40 via-transparent to-transparent pointer-events-none" />
             </div>
             {block.caption && (
               <p className="text-sm text-gray-400 mt-3 text-center italic">{block.caption}</p>
@@ -241,7 +258,6 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeSanitize]}  // T074: XSS 防护 - 清理危险 HTML
               components={{
                 h1: ({ children }) => (
                   <h1 className="text-4xl font-light text-white mt-16 mb-8 pb-4 border-b-2 border-[#00a4e4]/50">
@@ -268,6 +284,21 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
                     <span className="text-[#00a4e4] mt-2 flex-shrink-0">•</span>
                     <span>{children}</span>
                   </li>
+                ),
+                img: ({ src, alt }: any) => (
+                  <div className="my-8 flex justify-center">
+                    <div className="relative rounded-xl shadow-2xl max-w-full">
+                      <img
+                        src={src}
+                        alt={alt || ''}
+                        loading="lazy"
+                        className="w-full h-auto object-contain rounded-xl"
+                      />
+                      {alt && (
+                        <p className="text-sm text-gray-400 mt-3 text-center italic">{alt}</p>
+                      )}
+                    </div>
+                  </div>
                 ),
                 code: ({ inline, className, children, ...props }: any) => {
                   const match = /language-(\w+)/.exec(className || '');

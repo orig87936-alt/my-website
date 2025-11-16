@@ -39,8 +39,8 @@ export const SubscriptionAdminPage: React.FC = () => {
       console.log('Subscriptions response:', response);
 
       // 检查响应数据结构
-      if (response && Array.isArray(response.subscriptions)) {
-        setSubscriptions(response.subscriptions);
+      if (response && Array.isArray(response.items)) {
+        setSubscriptions(response.items);
       } else {
         console.error('Invalid response structure:', response);
         setSubscriptions([]);

@@ -5,6 +5,21 @@
 
   export default defineConfig({
     plugins: [react()],
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react-markdown',
+        'remark-gfm',
+        'lucide-react',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-tabs',
+        '@radix-ui/react-select',
+        '@radix-ui/react-scroll-area',
+      ],
+      exclude: [],
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -78,10 +93,56 @@
     build: {
       target: 'esnext',
       outDir: 'build',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // 核心框架
+            'react-vendor': ['react', 'react-dom'],
+            // UI 组件库
+            'radix-ui': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-select',
+              '@radix-ui/react-scroll-area',
+              '@radix-ui/react-tooltip',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-alert-dialog',
+            ],
+            // 编辑器相关（仅包含实际安装的包）
+            'editor': [
+              '@tiptap/react',
+              '@tiptap/starter-kit',
+            ],
+            // 图表和可视化
+            'charts': ['recharts'],
+            // Markdown 和内容处理
+            'markdown': ['react-markdown', 'remark-gfm'],
+            // 图标
+            'icons': ['lucide-react'],
+          },
+        },
+      },
+      // 优化配置
+      chunkSizeWarningLimit: 1000, // 提高警告阈值到 1MB
+      minify: 'esbuild', // 使用 esbuild 压缩（更快）
+      // 生产环境移除 console
+      esbuild: {
+        drop: ['console', 'debugger'],
+      },
     },
     server: {
       port: 3000,
       host: true, // 启用网络访问，显示局域网 IP 地址
-      open: true,
+      open: false, // 禁用自动打开浏览器，由启动脚本控制
+      strictPort: true, // 如果端口被占用则失败，而不是尝试下一个端口
+      warmup: {
+        // 预热常用文件以加快首次加载
+        clientFiles: [
+          './src/main.tsx',
+          './src/App.tsx',
+          './src/pages/**/*.tsx',
+        ],
+      },
     },
   });

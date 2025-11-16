@@ -9,6 +9,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const API_VERSION = '/api/v1';
 
+// 🔍 调试：打印 API 配置
+console.log('🔧 API Configuration:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  API_BASE_URL,
+  API_VERSION,
+  fullUrl: `${API_BASE_URL}${API_VERSION}`
+});
+
 // Types
 export interface Article {
   id: string;
@@ -37,6 +45,8 @@ export interface ContentBlock {
   url?: string;
   alt?: string;
   caption?: string;
+  width?: number;
+  height?: number;
 }
 
 export interface ArticleListResponse {
@@ -66,13 +76,18 @@ export interface ArticleUpdate {
   title_en?: string;
   summary_zh?: string;
   summary_en?: string;
+  lead_zh?: string;
+  lead_en?: string;
   content_zh?: ContentBlock[];
   content_en?: ContentBlock[];
   category?: string;
   author?: string;
   image_url?: string;
+  image_caption_zh?: string;
+  image_caption_en?: string;
   tags?: string[];
   status?: 'draft' | 'published' | 'archived';
+  published_at?: string;
 }
 
 export interface ApiError {
@@ -207,6 +222,16 @@ async function apiFetch<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${API_VERSION}${endpoint}`;
 
+  // 🔍 调试：打印请求信息
+  console.log('📤 API Request:', {
+    method: options.method || 'GET',
+    endpoint,
+    fullUrl: url,
+    requireAuth,
+    API_BASE_URL,
+    API_VERSION
+  });
+
   const config: RequestInit = {
     ...options,
     headers: {
@@ -217,6 +242,11 @@ async function apiFetch<T>(
 
   try {
     const response = await fetch(url, config);
+
+    // Handle 204 No Content responses (e.g., DELETE operations)
+    if (response.status === 204) {
+      return {} as T;
+    }
 
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
@@ -234,6 +264,42 @@ async function apiFetch<T>(
         detail: data.detail || `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
       };
+
+      // Handle 401 Unauthorized - try to refresh token
+      if (response.status === 401 && requireAuth && retryCount === 0) {
+        console.log('🔄 Token expired, attempting to refresh...');
+        const refreshToken = localStorage.getItem('refresh_token');
+
+        if (refreshToken) {
+          try {
+            // Try to refresh the token
+            const refreshResponse = await fetch(`${API_BASE_URL}${API_VERSION}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: refreshToken }),
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              setAuthToken(refreshData.access_token);
+              console.log('✅ Token refreshed successfully, retrying request...');
+
+              // Retry the original request with the new token
+              return apiFetch<T>(endpoint, options, requireAuth, retryCount + 1);
+            } else {
+              console.log('❌ Token refresh failed, clearing auth data...');
+              removeAuthToken();
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('user');
+            }
+          } catch (refreshError) {
+            console.error('❌ Token refresh error:', refreshError);
+            removeAuthToken();
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+          }
+        }
+      }
 
       // Check if we should retry
       const shouldRetry =
@@ -685,9 +751,7 @@ export interface RegisterRequest {
   verification_code: string;
 }
 
-export interface GoogleLoginRequest {
-  id_token: string;
-}
+
 
 export interface LoginResponse {
   access_token: string;
@@ -755,28 +819,26 @@ export const authAPI = {
     email: string,
     password: string,
     displayName: string,
-    verificationCode: string
+    verificationCode?: string
   ): Promise<LoginResponse> {
+    const requestBody: any = {
+      email,
+      password,
+      display_name: displayName,
+    };
+
+    // Only include verification_code if provided
+    if (verificationCode) {
+      requestBody.verification_code = verificationCode;
+    }
+
     return apiFetch<LoginResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({
-        email,
-        password,
-        display_name: displayName,
-        verification_code: verificationCode,
-      }),
+      body: JSON.stringify(requestBody),
     });
   },
 
-  /**
-   * Google OAuth login
-   */
-  async googleLogin(idToken: string): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/google/token', {
-      method: 'POST',
-      body: JSON.stringify({ id_token: idToken }),
-    });
-  },
+
 
   /**
    * Get current user info
@@ -1076,8 +1138,8 @@ export async function getDocumentHistory(
 
 export interface SubscriptionCreateRequest {
   email: string;
-  subscription_type?: 'ALL' | 'HEADLINE' | 'REGULATORY' | 'ANALYSIS' | 'BUSINESS' | 'ENTERPRISE' | 'OUTLOOK';
-  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  subscription_type?: 'all' | 'headline' | 'regulatory' | 'analysis' | 'business' | 'enterprise' | 'outlook';
+  frequency?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface SubscriptionResponse {
@@ -1093,10 +1155,10 @@ export interface SubscriptionResponse {
 }
 
 export interface SubscriptionListResponse {
-  subscriptions: SubscriptionResponse[];
+  items: SubscriptionResponse[];
   total: number;
-  skip: number;
-  limit: number;
+  page: number;
+  page_size: number;
 }
 
 export const subscriptionAPI = {

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { liveNewsList as initialLiveNewsList, LiveNewsItem } from '../data/liveNewsData';
 import { focusPointNews as initialFocusPointNews, featuredArticles as initialFeaturedArticles, FocusPointNews, FeaturedArticle } from '../data/featuredNewsData';
+import { TranslateButton } from './TranslateButton';
 
 interface NewsPageProps {
   onNavigateToArticle: (articleId: string) => void;
@@ -371,20 +372,8 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
       {/* News Grid - 6 Cards */}
       <section className="py-20 px-8 bg-[#05162a]/50">
         <div className="max-w-[1440px] mx-auto">
-          <div className="flex items-center justify-between mb-12">
+          <div className="mb-12">
             <h2 className="text-4xl font-light text-white">{t('news.latest.title')}</h2>
-            {isAdmin() && (
-              <button
-                onClick={() => {
-                  setEditingFeatured(null);
-                  setIsFeaturedModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-[#00a4e4] hover:bg-[#0090cc] text-white rounded-full transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                <span>{language.startsWith('zh') ? '添加文章' : 'Add Article'}</span>
-              </button>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -398,72 +387,41 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="group glass rounded-2xl overflow-hidden hover:bg-white/5 transition-all duration-300 relative"
+                  className="group glass rounded-2xl overflow-hidden hover:bg-white/5 transition-all duration-300 cursor-pointer"
+                  onClick={() => {
+                    // 如果是 PDF 文件，在新标签页打开
+                    if (article.link.endsWith('.pdf')) {
+                      window.open(article.link, '_blank');
+                    }
+                    // 如果是外部链接，在新标签页打开
+                    else if (article.link.startsWith('http')) {
+                      window.open(article.link, '_blank');
+                    }
+                    // 否则使用内部导航
+                    else {
+                      onNavigateToArticle(article.link.replace('/', ''));
+                    }
+                  }}
                 >
-                  {/* Admin Controls */}
-                  {isAdmin() && actualArticle && (
-                    <div className="absolute top-4 right-4 z-10 flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingFeatured(actualArticle);
-                          setIsFeaturedModalOpen(true);
-                        }}
-                        className="p-2 bg-[#00a4e4] hover:bg-[#0090cc] text-white rounded-lg transition-colors"
-                        title={language.startsWith('zh') ? '编辑' : 'Edit'}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFeatured(actualArticle.id);
-                        }}
-                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                        title={language.startsWith('zh') ? '删除' : 'Delete'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                  <div className="aspect-video overflow-hidden">
+                    <ImageWithFallback
+                      src={article.image}
+                      alt={article.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-6">
+                    {/* Category Badge - moved below image */}
+                    <div className="inline-block bg-[#00a4e4] text-white px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider mb-3">
+                      {article.category}
                     </div>
-                  )}
-
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => {
-                      // 如果是 PDF 文件，在新标签页打开
-                      if (article.link.endsWith('.pdf')) {
-                        window.open(article.link, '_blank');
-                      }
-                      // 如果是外部链接，在新标签页打开
-                      else if (article.link.startsWith('http')) {
-                        window.open(article.link, '_blank');
-                      }
-                      // 否则使用内部导航
-                      else {
-                        onNavigateToArticle(article.link.replace('/', ''));
-                      }
-                    }}
-                  >
-                    <div className="aspect-video overflow-hidden">
-                      <ImageWithFallback
-                        src={article.image}
-                        alt={article.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-6">
-                      {/* Category Badge - moved below image */}
-                      <div className="inline-block bg-[#00a4e4] text-white px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider mb-3">
-                        {article.category}
-                      </div>
-                      <p className="text-gray-400 text-sm mb-3">{article.date}</p>
-                      <h3 className="text-xl font-light text-white mb-4 group-hover:text-[#00a4e4] transition-colors leading-tight">
-                        {article.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-[#00a4e4] opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-sm">{t('news.readmore')}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
+                    <p className="text-gray-400 text-sm mb-3">{article.date}</p>
+                    <h3 className="text-xl font-light text-white mb-4 group-hover:text-[#00a4e4] transition-colors leading-tight">
+                      {article.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-[#00a4e4] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-sm">{t('news.readmore')}</span>
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </motion.div>
@@ -1024,16 +982,30 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                 {language.startsWith('zh') ? '标题' : 'Title'}
               </label>
               <div className="space-y-2">
-                <input
-                  type="text"
-                  value={formData.title['zh-CN']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    title: { ...formData.title, 'zh-CN': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-                  placeholder="简体中文标题"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.title['zh-CN']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'zh-CN': e.target.value }
+                    })}
+                    className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
+                    placeholder="简体中文标题"
+                  />
+                  <TranslateButton
+                    text={formData.title['zh-CN']}
+                    sourceLang="zh"
+                    targetLang="en"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'en': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                  />
+                </div>
                 <input
                   type="text"
                   value={formData.title['zh-TW']}
@@ -1044,16 +1016,30 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
                   placeholder="繁體中文標題"
                 />
-                <input
-                  type="text"
-                  value={formData.title['en']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    title: { ...formData.title, 'en': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-                  placeholder="English Title"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.title['en']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'en': e.target.value }
+                    })}
+                    className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
+                    placeholder="English Title"
+                  />
+                  <TranslateButton
+                    text={formData.title['en']}
+                    sourceLang="en"
+                    targetLang="zh"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'zh-CN': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1063,15 +1049,28 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                 {language.startsWith('zh') ? '摘要' : 'Summary'}
               </label>
               <div className="space-y-2">
-                <textarea
-                  value={formData.summary['zh-CN']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    summary: { ...formData.summary, 'zh-CN': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[60px]"
-                  placeholder="简体中文摘要"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.summary['zh-CN']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      summary: { ...formData.summary, 'zh-CN': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[60px]"
+                    placeholder="简体中文摘要"
+                  />
+                  <TranslateButton
+                    text={formData.summary['zh-CN']}
+                    sourceLang="zh"
+                    targetLang="en"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      summary: { ...formData.summary, 'en': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
                 <textarea
                   value={formData.summary['zh-TW']}
                   onChange={(e) => setFormData({
@@ -1081,15 +1080,28 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[60px]"
                   placeholder="繁體中文摘要"
                 />
-                <textarea
-                  value={formData.summary['en']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    summary: { ...formData.summary, 'en': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[60px]"
-                  placeholder="English Summary"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.summary['en']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      summary: { ...formData.summary, 'en': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[60px]"
+                    placeholder="English Summary"
+                  />
+                  <TranslateButton
+                    text={formData.summary['en']}
+                    sourceLang="en"
+                    targetLang="zh"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      summary: { ...formData.summary, 'zh-CN': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1099,15 +1111,28 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                 {language.startsWith('zh') ? '完整内容' : 'Full Content'}
               </label>
               <div className="space-y-2">
-                <textarea
-                  value={formData.fullContent['zh-CN']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    fullContent: { ...formData.fullContent, 'zh-CN': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[100px]"
-                  placeholder="简体中文完整内容"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.fullContent['zh-CN']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      fullContent: { ...formData.fullContent, 'zh-CN': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[100px]"
+                    placeholder="简体中文完整内容"
+                  />
+                  <TranslateButton
+                    text={formData.fullContent['zh-CN']}
+                    sourceLang="zh"
+                    targetLang="en"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      fullContent: { ...formData.fullContent, 'en': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
                 <textarea
                   value={formData.fullContent['zh-TW']}
                   onChange={(e) => setFormData({
@@ -1117,15 +1142,28 @@ function EditFocusPointModal({ focusPoint, onSave, onClose, language }: EditFocu
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[100px]"
                   placeholder="繁體中文完整內容"
                 />
-                <textarea
-                  value={formData.fullContent['en']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    fullContent: { ...formData.fullContent, 'en': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[100px]"
-                  placeholder="English Full Content"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.fullContent['en']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      fullContent: { ...formData.fullContent, 'en': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[100px]"
+                    placeholder="English Full Content"
+                  />
+                  <TranslateButton
+                    text={formData.fullContent['en']}
+                    sourceLang="en"
+                    targetLang="zh"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      fullContent: { ...formData.fullContent, 'zh-CN': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1303,16 +1341,30 @@ function EditFeaturedModal({ article, onSave, onClose, language }: EditFeaturedM
                 {language.startsWith('zh') ? '标题' : 'Title'}
               </label>
               <div className="space-y-2">
-                <input
-                  type="text"
-                  value={formData.title['zh-CN']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    title: { ...formData.title, 'zh-CN': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-                  placeholder="简体中文标题"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.title['zh-CN']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'zh-CN': e.target.value }
+                    })}
+                    className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
+                    placeholder="简体中文标题"
+                  />
+                  <TranslateButton
+                    text={formData.title['zh-CN']}
+                    sourceLang="zh"
+                    targetLang="en"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'en': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                  />
+                </div>
                 <input
                   type="text"
                   value={formData.title['zh-TW']}
@@ -1323,16 +1375,30 @@ function EditFeaturedModal({ article, onSave, onClose, language }: EditFeaturedM
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
                   placeholder="繁體中文標題"
                 />
-                <input
-                  type="text"
-                  value={formData.title['en']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    title: { ...formData.title, 'en': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-                  placeholder="English Title"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.title['en']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'en': e.target.value }
+                    })}
+                    className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
+                    placeholder="English Title"
+                  />
+                  <TranslateButton
+                    text={formData.title['en']}
+                    sourceLang="en"
+                    targetLang="zh"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      title: { ...formData.title, 'zh-CN': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1342,15 +1408,28 @@ function EditFeaturedModal({ article, onSave, onClose, language }: EditFeaturedM
                 {language.startsWith('zh') ? '描述' : 'Description'}
               </label>
               <div className="space-y-2">
-                <textarea
-                  value={formData.description['zh-CN']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    description: { ...formData.description, 'zh-CN': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[80px]"
-                  placeholder="简体中文描述"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.description['zh-CN']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      description: { ...formData.description, 'zh-CN': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[80px]"
+                    placeholder="简体中文描述"
+                  />
+                  <TranslateButton
+                    text={formData.description['zh-CN']}
+                    sourceLang="zh"
+                    targetLang="en"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      description: { ...formData.description, 'en': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
                 <textarea
                   value={formData.description['zh-TW']}
                   onChange={(e) => setFormData({
@@ -1360,15 +1439,28 @@ function EditFeaturedModal({ article, onSave, onClose, language }: EditFeaturedM
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[80px]"
                   placeholder="繁體中文描述"
                 />
-                <textarea
-                  value={formData.description['en']}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    description: { ...formData.description, 'en': e.target.value }
-                  })}
-                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[80px]"
-                  placeholder="English Description"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    value={formData.description['en']}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      description: { ...formData.description, 'en': e.target.value }
+                    })}
+                    className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] min-h-[80px]"
+                    placeholder="English Description"
+                  />
+                  <TranslateButton
+                    text={formData.description['en']}
+                    sourceLang="en"
+                    targetLang="zh"
+                    onTranslated={(translated) => setFormData({
+                      ...formData,
+                      description: { ...formData.description, 'zh-CN': translated }
+                    })}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
               </div>
             </div>
           </div>

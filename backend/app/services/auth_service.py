@@ -2,7 +2,7 @@
 Authentication service for user registration, login, and token management
 """
 from typing import Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from fastapi import HTTPException, status
@@ -141,7 +141,12 @@ class AuthService:
         
         # Create tokens
         access_token = create_access_token(
-            data={"sub": str(user.id), "username": user.username, "role": user.role.value}
+            data={
+                "sub": str(user.id),
+                "username": user.username,
+                "role": user.role.value,
+                "is_admin": True  # Admin login always sets is_admin to True
+            }
         )
         refresh_token_str = create_refresh_token()
         
@@ -183,7 +188,7 @@ class AuthService:
             )
         
         # Check if expired
-        if refresh_token.expires_at < datetime.utcnow():
+        if refresh_token.expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="刷新令牌已过期"
@@ -203,7 +208,8 @@ class AuthService:
                 "sub": str(user.id),
                 "email": user.email,
                 "username": user.username,
-                "role": user.role.value
+                "role": user.role.value,
+                "is_admin": (user.role.value == "ADMIN")  # Set is_admin based on role
             }
         )
         
@@ -247,7 +253,7 @@ class AuthService:
         Returns:
             Created RefreshToken object
         """
-        expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         
         refresh_token = RefreshToken(
             token=token,
@@ -378,7 +384,7 @@ class AuthService:
             refresh_token = RefreshToken(
                 user_id=user.id,
                 token=refresh_token_str,
-                expires_at=datetime.utcnow() + timedelta(days=7)
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7)
             )
             db.add(refresh_token)
             await db.commit()

@@ -20,7 +20,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
     display_name: str = Field(..., min_length=1, max_length=100)
-    verification_code: str = Field(..., min_length=6, max_length=6)
+    verification_code: Optional[str] = Field(None, min_length=6, max_length=6)
     
     @field_validator('password')
     @classmethod

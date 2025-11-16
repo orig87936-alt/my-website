@@ -1,0 +1,360 @@
+/**
+ * TipTap 编辑器样式
+ */
+
+.tiptap-editor {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+/* 编辑器内容区域 */
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: 300px;
+  padding: 1rem;
+}
+
+/* Placeholder 样式 */
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* 标题样式 */
+.tiptap-editor .ProseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+  color: #1a202c;
+}
+
+.tiptap-editor .ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 0.8em;
+  margin-bottom: 0.4em;
+  line-height: 1.3;
+  color: #2d3748;
+}
+
+.tiptap-editor .ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 0.6em;
+  margin-bottom: 0.3em;
+  line-height: 1.4;
+  color: #4a5568;
+}
+
+/* 段落样式 */
+.tiptap-editor .ProseMirror p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.6;
+  color: #2d3748;
+}
+
+/* 列表样式 */
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap-editor .ProseMirror li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+
+.tiptap-editor .ProseMirror ul li {
+  list-style-type: disc;
+}
+
+.tiptap-editor .ProseMirror ol li {
+  list-style-type: decimal;
+}
+
+/* 引用样式 */
+.tiptap-editor .ProseMirror blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  color: #4a5568;
+  font-style: italic;
+  background-color: #f7fafc;
+  padding: 0.5em 1em;
+  border-radius: 0 4px 4px 0;
+}
+
+/* 代码样式 */
+.tiptap-editor .ProseMirror code {
+  background-color: #f7fafc;
+  color: #e53e3e;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.tiptap-editor .ProseMirror pre {
+  background-color: #1a202c;
+  color: #f7fafc;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.tiptap-editor .ProseMirror pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+/* 图片样式 */
+.tiptap-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  display: block;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tiptap-editor .ProseMirror img:hover {
+  transform: scale(1.02);
+}
+
+/* 可调整大小的图片容器 */
+.tiptap-editor .ProseMirror .image-resizer {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* 选中图片时的样式 */
+.tiptap-editor .ProseMirror .image-resizer.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 调整大小的手柄 */
+.tiptap-editor .ProseMirror .image-resizer .resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.tiptap-editor .ProseMirror .image-resizer:hover .resize-handle,
+.tiptap-editor .ProseMirror .image-resizer.ProseMirror-selectednode .resize-handle {
+  opacity: 1;
+}
+
+/* 右下角手柄 */
+.tiptap-editor .ProseMirror .image-resizer .resize-handle.bottom-right {
+  bottom: -5px;
+  right: -5px;
+}
+
+/* 右上角手柄 */
+.tiptap-editor .ProseMirror .image-resizer .resize-handle.top-right {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+/* 左下角手柄 */
+.tiptap-editor .ProseMirror .image-resizer .resize-handle.bottom-left {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+/* 左上角手柄 */
+.tiptap-editor .ProseMirror .image-resizer .resize-handle.top-left {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+/* 删除按钮 */
+.tiptap-editor .ProseMirror .image-resizer .delete-button {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background-color: #ef4444;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 11;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tiptap-editor .ProseMirror .image-resizer:hover .delete-button,
+.tiptap-editor .ProseMirror .image-resizer.ProseMirror-selectednode .delete-button {
+  opacity: 1;
+}
+
+.tiptap-editor .ProseMirror .image-resizer .delete-button:hover {
+  transform: scale(1.1);
+  background-color: #dc2626;
+}
+
+/* 链接样式 */
+.tiptap-editor .ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.tiptap-editor .ProseMirror a:hover {
+  color: #2563eb;
+}
+
+/* 水平线样式 */
+.tiptap-editor .ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e2e8f0;
+  margin: 2em 0;
+}
+
+/* 粗体样式 */
+.tiptap-editor .ProseMirror strong {
+  font-weight: 700;
+  color: #1a202c;
+}
+
+/* 斜体样式 */
+.tiptap-editor .ProseMirror em {
+  font-style: italic;
+}
+
+/* 删除线样式 */
+.tiptap-editor .ProseMirror s {
+  text-decoration: line-through;
+  color: #718096;
+}
+
+/* 选中文本样式 */
+.tiptap-editor .ProseMirror ::selection {
+  background-color: #bee3f8;
+}
+
+/* 焦点样式 */
+.tiptap-editor .ProseMirror:focus {
+  outline: none;
+}
+
+/* 工具栏按钮激活状态 */
+.tiptap-editor .toolbar button.is-active {
+  background-color: #e2e8f0;
+  color: #3b82f6;
+}
+
+/* 工具栏按钮悬停状态 */
+.tiptap-editor .toolbar button:hover:not(:disabled) {
+  background-color: #f7fafc;
+}
+
+/* 工具栏按钮禁用状态 */
+.tiptap-editor .toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+  .tiptap-editor .ProseMirror {
+    padding: 0.75rem;
+  }
+
+  .tiptap-editor .toolbar {
+    padding: 0.5rem;
+  }
+
+  .tiptap-editor .ProseMirror h1 {
+    font-size: 1.75em;
+  }
+
+  .tiptap-editor .ProseMirror h2 {
+    font-size: 1.5em;
+  }
+
+  .tiptap-editor .ProseMirror h3 {
+    font-size: 1.25em;
+  }
+}
+
+/* 暗色模式支持（可选） */
+@media (prefers-color-scheme: dark) {
+  .tiptap-editor {
+    background-color: #1a202c;
+    border-color: #2d3748;
+  }
+
+  .tiptap-editor .ProseMirror {
+    color: #e2e8f0;
+  }
+
+  .tiptap-editor .ProseMirror h1,
+  .tiptap-editor .ProseMirror h2,
+  .tiptap-editor .ProseMirror h3 {
+    color: #f7fafc;
+  }
+
+  .tiptap-editor .ProseMirror p {
+    color: #e2e8f0;
+  }
+
+  .tiptap-editor .ProseMirror blockquote {
+    background-color: #2d3748;
+    color: #cbd5e0;
+    border-left-color: #4299e1;
+  }
+
+  .tiptap-editor .ProseMirror code {
+    background-color: #2d3748;
+    color: #fc8181;
+  }
+
+  .tiptap-editor .toolbar {
+    background-color: #2d3748;
+    border-color: #4a5568;
+  }
+}
+

@@ -16,8 +16,7 @@ interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<boolean>;
   loginWithEmail: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, displayName: string, verificationCode: string) => Promise<boolean>;
-  loginWithGoogle: (idToken: string) => Promise<boolean>;
+  register: (email: string, password: string, displayName: string, verificationCode?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   isAdmin: () => boolean;
@@ -101,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     displayName: string,
-    verificationCode: string
+    verificationCode?: string
   ): Promise<boolean> => {
     try {
       const response = await authAPI.register(email, password, displayName, verificationCode);
@@ -116,32 +115,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('user', JSON.stringify(userInfo));
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration failed:', error);
-      return false;
+      // Re-throw the error so the component can display it
+      throw new Error(error.detail || error.message || '注册失败，请稍后重试');
     }
   };
 
-  // Google OAuth login
-  const loginWithGoogle = async (idToken: string): Promise<boolean> => {
-    try {
-      const response = await authAPI.googleLogin(idToken);
 
-      // Save tokens
-      setAuthToken(response.access_token);
-      localStorage.setItem('refresh_token', response.refresh_token);
-
-      // Fetch user info
-      const userInfo = await authAPI.getCurrentUser();
-      setUser(userInfo);
-      localStorage.setItem('user', JSON.stringify(userInfo));
-
-      return true;
-    } catch (error) {
-      console.error('Google login failed:', error);
-      return false;
-    }
-  };
 
   // Logout
   const logout = async () => {
@@ -194,7 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       loginWithEmail,
       register,
-      loginWithGoogle,
       logout,
       refreshToken,
       isAdmin,

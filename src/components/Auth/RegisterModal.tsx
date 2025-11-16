@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { X, Loader2, AlertCircle, CheckCircle, Send } from 'lucide-react';
+import { X, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { authAPI } from '../../services/api';
-import { GoogleLoginButton } from './GoogleLoginButton';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -22,12 +20,8 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
     password: '',
     confirmPassword: '',
     displayName: '',
-    verificationCode: '',
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
@@ -49,51 +43,26 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
     setPasswordStrength(checkPasswordStrength(password));
   };
 
-  const handleSendCode = async () => {
-    if (!formData.email) {
-      setError(isChinese ? '请输入邮箱' : 'Please enter email');
-      return;
-    }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError(isChinese ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
-      return;
-    }
-
-    setIsSendingCode(true);
-    setError(null);
-
-    try {
-      await authAPI.sendVerificationCode(formData.email, 'register');
-      setCodeSent(true);
-      setCountdown(60);
-
-      // Start countdown
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (err: any) {
-      setError(err.message || (isChinese ? '发送验证码失败' : 'Failed to send verification code'));
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError(isChinese ? '两次输入的密码不一致' : 'Passwords do not match');
+    if (!formData.email) {
+      setError(isChinese ? '请输入邮箱' : 'Please enter email');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError(isChinese ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
+      return;
+    }
+
+    if (!formData.password) {
+      setError(isChinese ? '请输入密码' : 'Please enter password');
       return;
     }
 
@@ -102,42 +71,33 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       return;
     }
 
-    if (!/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
-      setError(isChinese ? '密码必须包含字母和数字' : 'Password must contain letters and numbers');
-      return;
-    }
-
-    if (!formData.verificationCode) {
-      setError(isChinese ? '请输入验证码' : 'Please enter verification code');
+    if (formData.password !== formData.confirmPassword) {
+      setError(isChinese ? '两次输入的密码不一致' : 'Passwords do not match');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const success = await register(
+      await register(
         formData.email,
         formData.password,
-        formData.displayName || formData.email.split('@')[0],
-        formData.verificationCode
+        formData.displayName || formData.email.split('@')[0]
+        // 不传递验证码参数
       );
 
-      if (success) {
-        onClose();
-        // Reset form
-        setFormData({
-          email: '',
-          password: '',
-          confirmPassword: '',
-          displayName: '',
-          verificationCode: '',
-        });
-        setCodeSent(false);
-      } else {
-        setError(isChinese ? '注册失败，请检查验证码' : 'Registration failed, please check verification code');
-      }
+      // If we get here, registration was successful
+      onClose();
+      // Reset form
+      setFormData({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        displayName: '',
+      });
     } catch (err: any) {
-      setError(err.message || (isChinese ? '注册失败' : 'Registration failed'));
+      // Display the error message from the backend
+      setError(err.message || (isChinese ? '注册失败，请稍后重试' : 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -149,11 +109,8 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       password: '',
       confirmPassword: '',
       displayName: '',
-      verificationCode: '',
     });
     setError(null);
-    setCodeSent(false);
-    setCountdown(0);
     onClose();
   };
 
@@ -216,48 +173,6 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
                 placeholder={isChinese ? '请输入邮箱' : 'Enter your email'}
                 required
               />
-            </div>
-
-            {/* Verification Code */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                {isChinese ? '验证码' : 'Verification Code'}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.verificationCode}
-                  onChange={(e) => setFormData({ ...formData, verificationCode: e.target.value })}
-                  className="flex-1 px-4 py-3 bg-[#1a3a52] border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#00a4e4] focus:bg-[#1e4159] transition-colors"
-                  placeholder={isChinese ? '请输入6位验证码' : 'Enter 6-digit code'}
-                  maxLength={6}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={handleSendCode}
-                  disabled={isSendingCode || countdown > 0}
-                  className="px-4 py-2.5 bg-[#00a4e4]/20 hover:bg-[#00a4e4]/30 text-[#00a4e4] rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-                >
-                  {isSendingCode ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : codeSent ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  {countdown > 0
-                    ? `${countdown}s`
-                    : isChinese
-                    ? '发送'
-                    : 'Send'}
-                </button>
-              </div>
-              {codeSent && countdown === 0 && (
-                <p className="text-xs text-green-400 mt-1">
-                  {isChinese ? '验证码已发送，请查收邮箱' : 'Verification code sent, please check your email'}
-                </p>
-              )}
             </div>
 
             {/* Display Name */}
@@ -334,27 +249,6 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
                 isChinese ? '注册' : 'Register'
               )}
             </button>
-
-            {/* Google Login */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#0a2540] px-2 text-gray-400">
-                  {isChinese ? '或' : 'Or'}
-                </span>
-              </div>
-            </div>
-
-            <GoogleLoginButton
-              onSuccess={() => {
-                handleClose();
-              }}
-              onError={(errorMsg) => {
-                setError(errorMsg);
-              }}
-            />
 
             {/* Login Link */}
             <div className="text-center pt-4 border-t border-white/10">

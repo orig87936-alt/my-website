@@ -24,9 +24,9 @@ class Article(Base):
     title_zh = Column(Text, nullable=False)
     title_en = Column(Text, nullable=False)
     
-    # Summaries (20-150 for Chinese, 20-300 for English)
-    summary_zh = Column(String(150), nullable=False)
-    summary_en = Column(String(300), nullable=False)
+    # Summaries (no length limit - using Text type)
+    summary_zh = Column(Text, nullable=False)
+    summary_en = Column(Text, nullable=False)
     
     # Lead paragraphs
     lead_zh = Column(Text, nullable=True)

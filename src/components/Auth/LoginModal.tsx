@@ -3,7 +3,6 @@ import { X, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { GoogleLoginButton } from './GoogleLoginButton';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -206,31 +205,6 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalPr
                 isChinese ? '登录' : 'Login'
               )}
             </button>
-
-            {/* Google Login (only for email login) */}
-            {loginType === 'email' && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[#0a2540] px-2 text-gray-400">
-                      {isChinese ? '或' : 'Or'}
-                    </span>
-                  </div>
-                </div>
-
-                <GoogleLoginButton
-                  onSuccess={() => {
-                    handleClose();
-                  }}
-                  onError={(errorMsg) => {
-                    setError(errorMsg);
-                  }}
-                />
-              </>
-            )}
 
             {/* Register Link (only for email login) */}
             {loginType === 'email' && (

@@ -39,14 +39,6 @@ class SubscriptionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SubscriptionListResponse(BaseModel):
-    """Schema for subscription list response"""
-    subscriptions: list[SubscriptionResponse]
-    total: int
-    skip: int
-    limit: int
-
-
 class SubscriptionPublicResponse(BaseModel):
     """Schema for public subscription response (limited fields)"""
     success: bool

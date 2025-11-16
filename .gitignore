@@ -38,3 +38,51 @@ build
 # Vercel
 .vercel
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.aws.example
+!backend/.env.production.example
+!backend/.env.production.template
+*.egg-info/
+.pytest_cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+backend/news_platform.db
+backend/newsdb.sqlite
+
+# Uploads
+backend/uploads/images/*
+!backend/uploads/images/.gitkeep
+
+# Secrets and credentials
+*.pem
+*.key
+PRODUCTION_SECRETS.txt
+*_SECRETS.txt
+
+# Test files
+test_*.html
+test_*.json
+test_*.txt
+test_*.md
+!TEST_REPORT.md
+*.log
+
+# Temporary files
+current_article.json
+new_article.json
+article_data.json
+article_content_raw.txt
+translation_result.json

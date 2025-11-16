@@ -16,8 +16,8 @@ export interface NewsArticle {
   imageCaptionEn: string;
   leadZh: string;
   leadEn: string;
-  contentZh: Array<{ type: 'paragraph' | 'heading' | 'list'; text?: string; items?: string[] }>;
-  contentEn: Array<{ type: 'paragraph' | 'heading' | 'list'; text?: string; items?: string[] }>;
+  contentZh: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentEn: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
 }
 
 // 默认新闻数据
@@ -1417,10 +1417,30 @@ function convertApiToLocal(apiArticle: Article): NewsArticle {
     return blocks.map(block => {
       if (block.type === 'list') {
         return { type: 'list' as const, items: block.items || [] };
-      } else if (block.type === 'heading' || block.type === 'paragraph') {
-        return { type: block.type, text: block.text || '' };
+      } else if (block.type === 'heading') {
+        return { type: 'heading' as const, text: block.text || '', level: block.level };
+      } else if (block.type === 'markdown') {
+        // ✅ 保留 markdown 类型，以便 MarkdownRenderer 可以正确解析
+        return { type: 'markdown' as const, text: block.text || '' };
+      } else if (block.type === 'paragraph') {
+        return { type: 'paragraph' as const, text: block.text || '' };
+      } else if (block.type === 'image') {
+        // ✅ 保留图片块的所有属性
+        return {
+          type: 'image' as const,
+          url: block.url || '',
+          caption: block.caption || '',
+          width: block.width,
+          height: block.height
+        };
+      } else if (block.type === 'code') {
+        // ✅ 保留代码块的所有属性
+        return { type: 'code' as const, text: block.text || '', language: block.language || 'text' };
+      } else if (block.type === 'quote') {
+        // ✅ 保留引用块的所有属性
+        return { type: 'quote' as const, text: block.text || '' };
       } else {
-        // For other types (image, code, quote), convert to paragraph
+        // 未知类型，转换为段落
         return { type: 'paragraph' as const, text: block.text || '' };
       }
     });
@@ -1449,29 +1469,81 @@ function convertApiToLocal(apiArticle: Article): NewsArticle {
  */
 function convertLocalToApi(newsArticle: NewsArticle): Partial<Article> {
   // Convert content blocks
-  const convertContent = (blocks: Array<{ type: 'paragraph' | 'heading' | 'list'; text?: string; items?: string[] }>): ApiContentBlock[] => {
+  const convertContent = (blocks: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>): ApiContentBlock[] => {
+    // If there's only one block and it contains Markdown syntax (headings, images, etc.),
+    // treat it as a single markdown block
+    if (blocks.length === 1 && blocks[0].type === 'paragraph') {
+      const text = blocks[0].text || '';
+      const hasMarkdownSyntax =
+        text.includes('![') ||  // Markdown images
+        text.includes('<img') || // HTML images
+        text.match(/^#{1,6}\s/m) || // Markdown headings
+        text.includes('\n\n'); // Multiple paragraphs
+
+      if (hasMarkdownSyntax) {
+        // Send as a single markdown block
+        return [{ type: 'markdown', text: text }];
+      }
+    }
+
+    // Otherwise, convert each block individually
     return blocks.map(block => {
       if (block.type === 'list') {
         return { type: 'list', items: block.items || [] };
+      } else if (block.type === 'heading') {
+        return { type: 'heading', text: block.text || '', level: block.level };
+      } else if (block.type === 'image') {
+        // ✅ 保留图片块的所有属性
+        return {
+          type: 'image',
+          url: block.url || '',
+          caption: block.caption || '',
+          width: block.width,
+          height: block.height
+        };
+      } else if (block.type === 'code') {
+        // ✅ 保留代码块的所有属性
+        return { type: 'code', text: block.text || '', language: block.language || 'text' };
+      } else if (block.type === 'quote') {
+        // ✅ 保留引用块的所有属性
+        return { type: 'quote', text: block.text || '' };
+      } else if (block.type === 'markdown') {
+        // ✅ 保留 markdown 块
+        return { type: 'markdown', text: block.text || '' };
       } else {
-        return { type: block.type, text: block.text || '' };
+        // paragraph 类型
+        return { type: 'paragraph', text: block.text || '' };
       }
     });
   };
 
-  return {
+  // ⚠️ 注意：NewsArticle 的 leadZh/leadEn 实际上对应后端的 summary_zh/summary_en
+  // 因为历史原因，前端的命名和后端不一致
+  const apiData: any = {
     id: newsArticle.id,
     title_zh: newsArticle.titleZh,
     title_en: newsArticle.titleEn,
-    summary_zh: newsArticle.leadZh,
-    summary_en: newsArticle.leadEn,
+    summary_zh: newsArticle.leadZh,  // 前端的 leadZh 对应后端的 summary_zh
+    summary_en: newsArticle.leadEn,  // 前端的 leadEn 对应后端的 summary_en
     content_zh: convertContent(newsArticle.contentZh),
     content_en: convertContent(newsArticle.contentEn),
     author: newsArticle.author,
-    image_url: newsArticle.image,
-    category: newsArticle.id.split('-')[0] || 'news', // Extract category from ID
+    category: newsArticle.category || 'headline',
     status: 'published' as const,
   };
+
+  // Only add optional fields if they have values
+  if (newsArticle.image) {
+    apiData.image_url = newsArticle.image;
+  }
+  if (newsArticle.imageCaptionZh) {
+    apiData.image_caption_zh = newsArticle.imageCaptionZh;
+  }
+  if (newsArticle.imageCaptionEn) {
+    apiData.image_caption_en = newsArticle.imageCaptionEn;
+  }
+
+  return apiData;
 }
 
 // ============================================================================
@@ -1591,7 +1663,25 @@ export async function getNewsArticle(id: string): Promise<NewsArticle | null> {
 export async function updateNewsArticle(id: string, article: NewsArticle): Promise<void> {
   try {
     console.log(`🌐 Updating article ${id} via API...`);
+    console.log('📝 Article data:', article);
     const apiData = convertLocalToApi(article);
+    console.log('📤 API data to be sent:', apiData);
+
+    // Validate required fields
+    if (!apiData.title_zh || apiData.title_zh.trim().length === 0) {
+      throw new Error('中文标题不能为空');
+    }
+    if (!apiData.title_en || apiData.title_en.trim().length === 0) {
+      throw new Error('英文标题不能为空');
+    }
+    if (!apiData.summary_zh || apiData.summary_zh.trim().length < 20) {
+      throw new Error('中文摘要至少需要20个字符');
+    }
+    if (!apiData.summary_en || apiData.summary_en.trim().length < 20) {
+      throw new Error('英文摘要至少需要20个字符');
+    }
+
+    console.log('✅ Validation passed, sending to API...');
     await articlesAPI.update(id, apiData);
     console.log('✅ Article updated successfully');
   } catch (error) {
@@ -1606,7 +1696,30 @@ export async function updateNewsArticle(id: string, article: NewsArticle): Promi
 export async function createNewsArticle(article: NewsArticle): Promise<void> {
   try {
     console.log('🌐 Creating new article via API...');
+    console.log('📝 Article data:', article);
     const apiData = convertLocalToApi(article);
+
+    // Remove id field when creating new article (backend will generate UUID)
+    // This is important because the article might have a non-UUID id (e.g., 'manus-ai')
+    delete apiData.id;
+
+    console.log('📤 API data to be sent:', apiData);
+
+    // Validate required fields
+    if (!apiData.title_zh || apiData.title_zh.trim().length === 0) {
+      throw new Error('中文标题不能为空');
+    }
+    if (!apiData.title_en || apiData.title_en.trim().length === 0) {
+      throw new Error('英文标题不能为空');
+    }
+    if (!apiData.summary_zh || apiData.summary_zh.trim().length < 20) {
+      throw new Error('中文摘要至少需要20个字符');
+    }
+    if (!apiData.summary_en || apiData.summary_en.trim().length < 20) {
+      throw new Error('英文摘要至少需要20个字符');
+    }
+
+    console.log('✅ Validation passed, sending to API...');
     await articlesAPI.create(apiData as any);
     console.log('✅ Article created successfully');
   } catch (error) {

@@ -4,6 +4,7 @@
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from pathlib import Path
@@ -29,6 +30,9 @@ from ..services.translation import TranslationService
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
+# HTTP Bearer token security scheme
+security = HTTPBearer()
+
 # 文件大小限制：10MB
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
@@ -48,7 +52,8 @@ async def upload_document(
     auto_translate: bool = Form(False, description="Auto-translate content to target language"),
     target_lang: str = Form("en", description="Target language for translation (zh/en)"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> UploadDocumentResponse:
     """
     Upload and parse Markdown or Word document with intelligent content extraction.
@@ -95,7 +100,7 @@ async def upload_document(
     - **uploaded_at**: Upload timestamp
     """
     start_time = time.time()
-    
+
     # 验证文件名
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -144,8 +149,8 @@ async def upload_document(
         # 2. 上传图片（如果有）
         uploaded_images = []
         if images:
-            # 获取认证 token
-            auth_token = current_user.get('token', '')
+            # 获取认证 token - 从 credentials 获取
+            auth_token = credentials.credentials
             uploaded_images = await upload_images_concurrently(images, auth_token, max_concurrent=5)
         
         # 3. 生成 AI 元数据
@@ -202,7 +207,7 @@ async def upload_document(
 
             # 翻译所有文本块
             translated_blocks = []
-            for block in content_blocks:
+            for i, block in enumerate(content_blocks):
                 if block.type in ['paragraph', 'heading', 'quote', 'list'] and block.content:
                     try:
                         translation_result = await translation_service.translate_text(
@@ -212,17 +217,17 @@ async def upload_document(
                         )
                         # 提取翻译后的文本
                         translated_text = translation_result['translated_text']
+
                         translated_blocks.append(ContentBlock(
                             type=block.type,
                             content=translated_text,
                             level=block.level,
                             language=block.language,
-                            ordered=block.ordered,
                             caption=block.caption
                         ))
                     except Exception as e:
                         # 翻译失败时保留原文
-                        print(f"⚠️ Translation failed for block: {e}")
+                        print(f"⚠️ Translation failed for block {i+1}: {e}")
                         translated_blocks.append(block)
                 else:
                     # 非文本块（如图片、代码）直接复制

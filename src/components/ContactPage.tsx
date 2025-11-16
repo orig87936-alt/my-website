@@ -1,12 +1,16 @@
 import { Facebook, Twitter, Linkedin, Instagram, Youtube, Github } from 'lucide-react';
 import { WeChatSVG, WeiboSVG, DouyinSVG, XiaohongshuSVG } from '../imports/chinese-social-icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { subscriptionAPI } from '../services/api';
 
 export function ContactPage() {
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const socialMediaRow1 = [
     { icon: Linkedin, name: 'LinkedIn', url: '#', type: 'lucide' as const },
@@ -44,11 +48,46 @@ export function ContactPage() {
     },
   ];
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle subscription logic here
-    console.log('Subscribing email:', email);
-    setEmail('');
+
+    if (!email) {
+      showToast(
+        language.startsWith('zh') ? '请输入邮箱地址' : 'Please enter your email address',
+        'warning'
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const requestData = {
+        email,
+        subscription_type: 'all',
+        frequency: 'weekly'
+      };
+      console.log('Sending subscription request:', requestData);
+      await subscriptionAPI.create(requestData);
+
+      showToast(
+        language.startsWith('zh')
+          ? '订阅成功！请查收确认邮件。'
+          : 'Subscription successful! Please check your email for confirmation.',
+        'success'
+      );
+
+      setEmail('');
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+
+      const errorMessage = error.message || error.detail ||
+        (language.startsWith('zh') ? '订阅失败，请稍后重试' : 'Subscription failed. Please try again later.');
+
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,13 +139,18 @@ export function ContactPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={language.startsWith('zh') ? '输入您的邮箱地址' : 'Enter your email address'}
                 required
-                className="flex-1 px-6 py-4 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-[#00a4e4] focus:ring-2 focus:ring-[#00a4e4]/20 transition-all"
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-4 rounded-full bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-[#00a4e4] focus:ring-2 focus:ring-[#00a4e4]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                className="px-10 py-4 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-full transition-all whitespace-nowrap"
+                disabled={isSubmitting}
+                className="px-10 py-4 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-full transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {language.startsWith('zh') ? '订阅' : 'Subscribe'}
+                {isSubmitting
+                  ? (language.startsWith('zh') ? '提交中...' : 'Submitting...')
+                  : (language.startsWith('zh') ? '订阅' : 'Subscribe')
+                }
               </button>
             </form>
 

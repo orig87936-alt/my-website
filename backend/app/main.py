@@ -4,6 +4,8 @@ FastAPI application entry point
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
 import time
@@ -69,12 +71,41 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
+    redirect_slashes=False  # Disable trailing slash redirects to avoid CORS issues
 )
 
 # Add rate limiter to app state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add validation error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom handler for Pydantic validation errors.
+    Returns detailed error information for debugging.
+    """
+    errors = exc.errors()
+    logger.error(f"Validation error for {request.method} {request.url.path}: {errors}")
+
+    # Format errors for better readability
+    formatted_errors = []
+    for error in errors:
+        formatted_errors.append({
+            "field": " -> ".join(str(loc) for loc in error["loc"]),
+            "message": error["msg"],
+            "type": error["type"],
+            "input": error.get("input")
+        })
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Validation error",
+            "errors": formatted_errors
+        }
+    )
 
 # Configure CORS - MUST be added BEFORE other middleware
 app.add_middleware(
