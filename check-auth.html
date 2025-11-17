@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Auth Status</title>
+</head>
+<body>
+    <h1>Authentication Status</h1>
+    <div id="status"></div>
+    
+    <script>
+        const token = localStorage.getItem('authToken');
+        const statusDiv = document.getElementById('status');
+        
+        if (token) {
+            statusDiv.innerHTML = `
+                <p style="color: green;">✅ Token found</p>
+                <p>Token length: ${token.length}</p>
+                <p>Token preview: ${token.substring(0, 50)}...</p>
+                <hr>
+                <h2>Decoded Token:</h2>
+                <pre>${JSON.stringify(decodeToken(token), null, 2)}</pre>
+            `;
+        } else {
+            statusDiv.innerHTML = '<p style="color: red;">❌ No token found</p>';
+        }
+        
+        function decodeToken(token) {
+            try {
+                const payload = token.split('.')[1];
+                return JSON.parse(atob(payload));
+            } catch (e) {
+                return { error: 'Failed to decode token' };
+            }
+        }
+    </script>
+</body>
+</html>
+

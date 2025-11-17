@@ -1,0 +1,90 @@
+{
+  "project_name": "sl-news-platform",
+  "deployment_info": {
+    "status": "准备中",
+    "created_at": "2025-11-15",
+    "deployment_type": "AWS EC2 + RDS + S3 + CloudFront"
+  },
+  "aws_resources": {
+    "region": "us-east-2",
+    "rds": {
+      "instance_identifier": "sl-news-db",
+      "engine": "postgres",
+      "engine_version": "14.20",
+      "instance_class": "db.t3.micro",
+      "allocated_storage": 20,
+      "database_name": "slnews",
+      "master_username": "postgres",
+      "master_password": "Slnews2024!",
+      "publicly_accessible": true,
+      "security_group_name": "sl-news-db-sg",
+      "endpoint": "sl-news-db.czks6o22ep09.us-east-2.rds.amazonaws.com",
+      "port": 5432,
+      "status": "available",
+      "pgvector_version": "0.8.0"
+    },
+    "ec2": {
+      "instance_name": "sl-news-backend",
+      "ami": "Ubuntu Server 22.04 LTS",
+      "instance_type": "t3.small",
+      "key_pair_name": "sl-news-key",
+      "security_group_name": "sl-news-backend-sg",
+      "elastic_ip": "待分配后填写",
+      "public_dns": "待创建后填写"
+    },
+    "s3": {
+      "bucket_name": "sl-news-frontend-YYYYMMDD",
+      "region": "us-east-1",
+      "website_endpoint": "待创建后填写"
+    },
+    "cloudfront": {
+      "distribution_id": "待创建后填写",
+      "domain_name": "待创建后填写"
+    }
+  },
+  "environment_variables": {
+    "backend": {
+      "DATABASE_URL": "postgresql+asyncpg://postgres:Slnews2024!@sl-news-db.czks6o22ep09.us-east-2.rds.amazonaws.com:5432/slnews",
+      "SECRET_KEY": "sl-news-prod-secret-key-2024-change-this-to-random-32-chars-min",
+      "DEEPSEEK_API_KEY": "sk-7dd7f650117143e9b9c2d312164cb873",
+      "OPENAI_API_KEY": "sk-your-openai-api-key-here",
+      "RESEND_API_KEY": "re_your-resend-api-key-here",
+      "CORS_ORIGINS": "http://localhost:5173,http://localhost:3000,https://your-cloudfront-domain.cloudfront.net",
+      "FRONTEND_URL": "待CloudFront创建后填写",
+      "ADMIN_USERNAME": "admin",
+      "ADMIN_PASSWORD": "Slnews2024Admin!",
+      "ENVIRONMENT": "production",
+      "DEBUG": "False"
+    },
+    "frontend": {
+      "VITE_API_BASE_URL": "http://EC2公网IP或域名"
+    }
+  },
+  "deployment_steps": {
+    "completed": [
+      "AWS账号准备",
+      "创建RDS PostgreSQL数据库",
+      "配置安全组",
+      "测试数据库连接",
+      "安装pgvector扩展"
+    ],
+    "current": "创建EC2实例并部署后端",
+    "remaining": [
+      "创建EC2实例",
+      "配置EC2安全组",
+      "部署后端代码",
+      "初始化数据库",
+      "构建并部署前端到S3",
+      "配置CloudFront CDN",
+      "测试和验证"
+    ]
+  },
+  "notes": {
+    "cost_estimate": "月度成本约 $30-60",
+    "free_tier": "新AWS账号前12个月可享受免费套餐",
+    "domain": "稍后配置",
+    "ssl": "使用Let's Encrypt免费证书",
+    "openai": "暂不使用，向量搜索功能将被禁用"
+  }
+}
+

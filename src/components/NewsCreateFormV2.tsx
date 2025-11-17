@@ -561,8 +561,8 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
         .form-label {
           display: block;
           margin-bottom: 8px;
-          font-weight: 500;
-          color: #374151;
+          font-weight: 600;
+          color: #111827;
           font-size: 14px;
         }
 

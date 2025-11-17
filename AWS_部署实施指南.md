@@ -301,7 +301,7 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 5. 实例：选择 `sl-news-backend`
 6. 点击 **关联**
 
-记录弹性 IP 地址（例如：`54.123.45.67`）
+记录弹性 IP 地址（例如：`18.221.125.254`）
 
 ### 3.3 连接到 EC2 实例
 
@@ -312,14 +312,14 @@ icacls sl-news-key.pem /inheritance:r
 icacls sl-news-key.pem /grant:r "$($env:USERNAME):(R)"
 
 # 连接到 EC2
-ssh -i sl-news-key.pem ubuntu@54.123.45.67
+ssh -i sl-news-key.pem ubuntu@18.221.125.254
 ```
 
 **或使用 PuTTY（Windows）**:
 1. 下载 PuTTY: https://www.putty.org/
 2. 使用 PuTTYgen 转换 `.pem` 为 `.ppk`
 3. 在 PuTTY 中：
-   - Host Name: `ubuntu@54.123.45.67`
+   - Host Name: `ubuntu@18.221.125.254`
    - Connection → SSH → Auth → Private key: 选择 `.ppk` 文件
    - 点击 **Open**
 
@@ -391,7 +391,7 @@ cd sl-news-platform
 
 ```powershell
 # 在本地机器上（Windows PowerShell）
-scp -i sl-news-key.pem -r d:\主页设计 ubuntu@54.123.45.67:/home/ubuntu/sl-news-platform
+scp -i sl-news-key.pem -r d:\主页设计 ubuntu@18.221.125.254:/home/ubuntu/sl-news-platform
 ```
 
 ### 4.3 配置后端环境
@@ -461,7 +461,7 @@ ENVIRONMENT=production
 DEBUG=False
 
 # 前端 URL（后续更新为你的域名）
-FRONTEND_URL=http://54.123.45.67
+FRONTEND_URL=http://18.221.125.254
 
 # 其他配置
 VECTOR_SEARCH_LIMIT=5
@@ -603,10 +603,15 @@ sudo systemctl status nginx
 
 在浏览器中访问：
 ```
-http://54.123.45.67/docs
+http://18.221.125.254:8000/api/docs
 ```
 
 你应该看到 FastAPI 的 Swagger 文档页面！🎉
+
+**注意：**
+- 后端 API 的路径前缀是 `/api`
+- 直接访问端口 8000：`http://18.221.125.254:8000/api/docs`
+- 通过 Nginx 代理：`http://18.221.125.254/api/docs`
 
 ---
 
@@ -622,7 +627,7 @@ cd d:\主页设计
 
 # 创建生产环境配置
 @"
-VITE_API_BASE_URL=http://54.123.45.67
+VITE_API_BASE_URL=http://18.221.125.254:8000/api
 "@ | Out-File -Encoding UTF8 .env.production
 
 # 安装依赖（如果还没有）
@@ -831,7 +836,7 @@ https://d1234567890abc.cloudfront.net
 2. 配置：
    - 记录名称：`api`
    - 记录类型：`A - IPv4 地址`
-   - 值：`54.123.45.67`（你的 EC2 弹性 IP）
+   - 值：`18.221.125.254`（你的 EC2 弹性 IP）
 3. 点击 **创建记录**
 
 ### 6.5 为后端配置 SSL（Let's Encrypt）
@@ -963,7 +968,7 @@ OPENAI_API_KEY=sk-your_actual_openai_key_here
 
 ```bash
 # SSH 到 EC2
-ssh -i sl-news-key.pem ubuntu@54.123.45.67
+ssh -i sl-news-key.pem ubuntu@18.221.125.254
 
 # 重启服务
 sudo systemctl restart sl-news-backend
@@ -1036,7 +1041,7 @@ sudo tail -f /var/log/nginx/error.log
 
 ```bash
 # SSH 到 EC2
-ssh -i sl-news-key.pem ubuntu@54.123.45.67
+ssh -i sl-news-key.pem ubuntu@18.221.125.254
 
 # 进入项目目录
 cd /home/ubuntu/sl-news-platform

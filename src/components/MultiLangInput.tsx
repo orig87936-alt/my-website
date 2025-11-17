@@ -100,9 +100,9 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
     <div className="space-y-2 multilang-input-wrapper">
       {/* Label and Batch Translate Button */}
       <div className="flex items-center justify-between">
-        <label className={`block text-sm font-medium ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
+        <label className={`block text-sm font-medium ${isDarkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
           {label}
-          {requiredLangs.length > 0 && <span className="text-red-400 ml-1">*</span>}
+          {requiredLangs.length > 0 && <span className="text-red-500 ml-1">*</span>}
         </label>
 
         {primaryValue && getTargetLangs().length > 0 && (
@@ -119,7 +119,7 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Primary Language Input (Always Visible) */}
       <div className="space-y-2">
-        <div className={`text-xs ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>
           {LANGUAGE_LABELS[primaryLang]}
         </div>
         <InputComponent
@@ -140,10 +140,10 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex items-center gap-1 text-xs transition-colors ${
+        className={`flex items-center gap-1 text-sm font-medium transition-colors ${
           isDarkTheme
             ? 'text-gray-400 hover:text-white'
-            : 'text-gray-600 hover:text-gray-900'
+            : 'text-blue-600 hover:text-blue-800'
         }`}
       >
         {isExpanded ? (
@@ -161,11 +161,11 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Other Languages (Collapsible) */}
       {isExpanded && (
-        <div className={`space-y-3 pl-4 border-l-2 ${isDarkTheme ? 'border-white/10' : 'border-gray-200'}`}>
+        <div className={`space-y-3 pl-4 border-l-2 ${isDarkTheme ? 'border-white/10' : 'border-gray-300'}`}>
           {LANGUAGE_CODES.filter(lang => lang !== primaryLang).map((lang) => (
             <div key={lang} className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className={`text-xs ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>
                   {LANGUAGE_LABELS[lang]}
                 </div>
                 {primaryValue && !values[lang] && (
@@ -203,7 +203,7 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Required Languages Validation */}
       {requiredLangs.some(lang => !values[lang]) && (
-        <div className="text-xs text-red-400">
+        <div className="text-sm text-red-600 font-medium">
           必填语言: {requiredLangs.filter(lang => !values[lang]).map(lang => LANGUAGE_LABELS[lang]).join(', ')}
         </div>
       )}

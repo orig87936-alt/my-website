@@ -50,3 +50,6 @@ openai==2.7.2
 # Additional dependencies
 PyJWT==2.10.1
 
+# Rate limiting
+slowapi==0.1.9
+

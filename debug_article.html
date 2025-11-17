@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章调试工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a2540;
+            color: #fff;
+        }
+        h1 {
+            color: #00a4e4;
+            border-bottom: 2px solid #00a4e4;
+            padding-bottom: 10px;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #00a4e4;
+            margin-top: 0;
+        }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            color: #0f0;
+        }
+        .success {
+            color: #0f0;
+        }
+        .error {
+            color: #f00;
+        }
+        .warning {
+            color: #ff0;
+        }
+        button {
+            background: #00a4e4;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0080b3;
+        }
+        img {
+            max-width: 100%;
+            border: 2px solid #00a4e4;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .block-item {
+            background: rgba(0, 164, 228, 0.1);
+            border-left: 3px solid #00a4e4;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 文章调试工具</h1>
+    
+    <div class="section">
+        <h2>1. 获取文章列表</h2>
+        <button onclick="fetchArticles()">获取文章列表</button>
+        <div id="articles-list"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. 查看文章详情</h2>
+        <input type="text" id="article-id" placeholder="输入文章ID" style="width: 400px; padding: 8px; background: #000; color: #fff; border: 1px solid #00a4e4; border-radius: 4px;">
+        <button onclick="fetchArticleDetail()">获取文章详情</button>
+        <div id="article-detail"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. 测试图片访问</h2>
+        <input type="text" id="image-url" placeholder="输入图片URL" style="width: 400px; padding: 8px; background: #000; color: #fff; border: 1px solid #00a4e4; border-radius: 4px;">
+        <button onclick="testImage()">测试图片</button>
+        <div id="image-test"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        async function fetchArticles() {
+            const output = document.getElementById('articles-list');
+            output.innerHTML = '<p>加载中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/articles?page=1&page_size=10`);
+                const data = await response.json();
+                
+                let html = `<p class="success">✅ 找到 ${data.total} 篇文章</p>`;
+                html += '<div style="max-height: 400px; overflow-y: auto;">';
+                
+                data.items.forEach(article => {
+                    html += `
+                        <div class="block-item">
+                            <strong>${article.title_zh || article.title_en}</strong><br>
+                            <small>ID: ${article.id}</small><br>
+                            <small>分类: ${article.category}</small><br>
+                            <button onclick="loadArticle('${article.id}')">查看详情</button>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                output.innerHTML = html;
+            } catch (error) {
+                output.innerHTML = `<p class="error">❌ 错误: ${error.message}</p>`;
+            }
+        }
+
+        function loadArticle(id) {
+            document.getElementById('article-id').value = id;
+            fetchArticleDetail();
+        }
+
+        async function fetchArticleDetail() {
+            const articleId = document.getElementById('article-id').value;
+            const output = document.getElementById('article-detail');
+            
+            if (!articleId) {
+                output.innerHTML = '<p class="warning">⚠️ 请输入文章ID</p>';
+                return;
+            }
+            
+            output.innerHTML = '<p>加载中...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/articles/${articleId}`);
+                const article = await response.json();
+                
+                let html = `<h3 class="success">✅ 文章详情</h3>`;
+                html += `<p><strong>标题（中）:</strong> ${article.title_zh}</p>`;
+                html += `<p><strong>标题（英）:</strong> ${article.title_en}</p>`;
+                html += `<p><strong>封面图片:</strong> ${article.image_url || '<span class="warning">无</span>'}</p>`;
+                
+                if (article.image_url) {
+                    html += `<img src="${article.image_url}" alt="封面图片" onerror="this.style.border='2px solid red'; this.alt='图片加载失败';">`;
+                }
+                
+                html += `<h4>中文内容块 (${article.content_zh?.length || 0} 个):</h4>`;
+                if (article.content_zh && article.content_zh.length > 0) {
+                    article.content_zh.forEach((block, index) => {
+                        html += `<div class="block-item">`;
+                        html += `<strong>块 ${index + 1} - 类型: ${block.type}</strong><br>`;
+                        
+                        if (block.type === 'image') {
+                            html += `<p>URL: ${block.url || '<span class="error">无</span>'}</p>`;
+                            html += `<p>说明: ${block.caption || '无'}</p>`;
+                            if (block.url) {
+                                html += `<img src="${block.url}" alt="${block.caption || ''}" onerror="this.style.border='2px solid red'; this.alt='图片加载失败: ' + this.src;">`;
+                                html += `<button onclick="testImageUrl('${block.url}')">测试此图片</button>`;
+                            }
+                        } else if (block.type === 'paragraph' || block.type === 'markdown') {
+                            const text = block.text || '';
+                            html += `<p>文本: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}</p>`;
+                        } else if (block.type === 'heading') {
+                            html += `<p>级别: ${block.level}</p>`;
+                            html += `<p>文本: ${block.text}</p>`;
+                        } else if (block.type === 'list') {
+                            html += `<p>项目数: ${block.items?.length || 0}</p>`;
+                        }
+                        
+                        html += `</div>`;
+                    });
+                } else {
+                    html += `<p class="warning">⚠️ 没有中文内容块</p>`;
+                }
+                
+                html += `<h4>原始JSON:</h4>`;
+                html += `<pre>${JSON.stringify(article, null, 2)}</pre>`;
+                
+                output.innerHTML = html;
+            } catch (error) {
+                output.innerHTML = `<p class="error">❌ 错误: ${error.message}</p>`;
+            }
+        }
+
+        function testImageUrl(url) {
+            document.getElementById('image-url').value = url;
+            testImage();
+        }
+
+        async function testImage() {
+            const imageUrl = document.getElementById('image-url').value;
+            const output = document.getElementById('image-test');
+            
+            if (!imageUrl) {
+                output.innerHTML = '<p class="warning">⚠️ 请输入图片URL</p>';
+                return;
+            }
+            
+            output.innerHTML = '<p>测试中...</p>';
+            
+            try {
+                const response = await fetch(imageUrl);
+                const contentType = response.headers.get('content-type');
+                const size = response.headers.get('content-length');
+                
+                let html = `<h3 class="success">✅ 图片可访问</h3>`;
+                html += `<p><strong>URL:</strong> ${imageUrl}</p>`;
+                html += `<p><strong>状态码:</strong> ${response.status}</p>`;
+                html += `<p><strong>Content-Type:</strong> ${contentType}</p>`;
+                html += `<p><strong>大小:</strong> ${size ? (parseInt(size) / 1024).toFixed(2) + ' KB' : '未知'}</p>`;
+                html += `<h4>图片预览:</h4>`;
+                html += `<img src="${imageUrl}" alt="测试图片" onerror="this.style.border='2px solid red'; this.alt='图片加载失败';">`;
+                
+                output.innerHTML = html;
+            } catch (error) {
+                output.innerHTML = `<p class="error">❌ 图片访问失败: ${error.message}</p>`;
+            }
+        }
+
+        // 页面加载时自动获取文章列表
+        window.onload = () => {
+            fetchArticles();
+        };
+    </script>
+</body>
+</html>
+
