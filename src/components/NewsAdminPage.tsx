@@ -9,7 +9,7 @@ import { NEWS_CATEGORIES } from '../constants/newsCategories';
 import { ARTICLE_STATUSES } from '../constants/newsCategories';
 import { ArticleStatusBadge } from './ArticleStatusBadge';
 import { CategoryBadge } from './CategoryBadge';
-import { NewsCreateForm } from './NewsCreateForm';
+import { NewsCreateFormV2 } from './NewsCreateFormV2';
 import DocumentUploadDialog from './DocumentUploadDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -295,9 +295,9 @@ export const NewsAdminPage: React.FC<NewsAdminPageProps> = ({
         }}
       />
 
-      {/* 创建表单模态框 */}
+      {/* 创建表单模态框 (V2 with 8-language support) */}
       {showCreateForm && (
-        <NewsCreateForm
+        <NewsCreateFormV2
           initialData={uploadedData}
           onSuccess={() => {
             setShowCreateForm(false);
