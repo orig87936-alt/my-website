@@ -932,12 +932,17 @@ export { API_BASE_URL, API_VERSION };
 // ============================================================================
 
 /**
+ * Supported languages (T030: 8-language support)
+ */
+export type SupportedLanguage = 'zh' | 'zh-tw' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+
+/**
  * Translation request interface
  */
 export interface TranslateRequest {
   text: string;
-  source_lang?: 'zh' | 'en';
-  target_lang: 'zh' | 'en';
+  source_lang?: SupportedLanguage;
+  target_lang: SupportedLanguage;
 }
 
 /**
@@ -963,9 +968,39 @@ export interface BatchTranslateField {
  */
 export interface BatchTranslateRequest {
   fields: BatchTranslateField[];
-  source_lang?: 'zh' | 'en';
-  target_lang: 'zh' | 'en';
+  source_lang?: SupportedLanguage;
+  target_lang: SupportedLanguage;
   article_id?: string;
+}
+
+/**
+ * Multi-language translate request interface (T030)
+ */
+export interface MultiLangTranslateRequest {
+  text: string;
+  source_lang?: SupportedLanguage;
+  target_langs: SupportedLanguage[];
+}
+
+/**
+ * Multi-language translate result interface (T030)
+ */
+export interface MultiLangTranslateResult {
+  translated_text: string | null;
+  cached: boolean;
+  images_count: number;
+  error: string | null;
+}
+
+/**
+ * Multi-language translate response interface (T030)
+ */
+export interface MultiLangTranslateResponse {
+  results: Record<string, MultiLangTranslateResult>;
+  source_lang: string;
+  total_langs: number;
+  success_count: number;
+  failed_count: number;
 }
 
 /**
@@ -1031,11 +1066,35 @@ export async function batchTranslate(request: BatchTranslateRequest): Promise<Ba
 }
 
 /**
+ * Translate text to multiple languages (T030)
+ */
+export async function translateToMultipleLanguages(
+  request: MultiLangTranslateRequest
+): Promise<MultiLangTranslateResponse> {
+  const response = await fetch(`${API_BASE_URL}${API_VERSION}/translation/translate-multiple`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${getAuthToken()}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Multi-language translation failed' }));
+    throw new Error(error.detail || 'Multi-language translation failed');
+  }
+
+  return response.json();
+}
+
+/**
  * Upload and parse a document (Markdown or Word)
  */
 export interface UploadDocumentOptions {
   auto_translate?: boolean;
   target_lang?: string;
+  target_langs?: string[];  // T031: Support multiple target languages
   category?: string;
 }
 
