@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Navigation } from './components/Navigation';
 import { HomePage } from './components/HomePage';
-import { LanguageProvider } from './contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoadingProvider } from './contexts/LoadingContext';
@@ -32,9 +32,17 @@ const PageLoader = () => (
 
 function AppContent() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [currentPage, setCurrentPage] = useState('home');
   const [articleId, setArticleId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // T063: Add RTL support for Arabic language
+  useEffect(() => {
+    const isRTL = language === 'ar';
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+  }, [language]);
 
   // 检查 URL 参数来处理订阅确认和退订
   useEffect(() => {
