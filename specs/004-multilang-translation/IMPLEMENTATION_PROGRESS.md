@@ -8,8 +8,8 @@
 
 ## 📊 总体进度
 
-- **已完成**: 49/104 任务 (47.1%)
-- **进行中**: Phase 4, 7
+- **已完成**: 60/104 任务 (57.7%)
+- **进行中**: Phase 7
 - **待完成**: Phase 8-10
 
 ---
@@ -154,19 +154,37 @@
 
 ## 🔄 进行中的阶段
 
-### Phase 4: 文档上传多语言翻译 (3/11 tasks) ⏳
+### Phase 4: 文档上传多语言翻译 (11/11 tasks) ✅
 
-**已完成**:
+- [x] T021: 更新后端 `POST /api/v1/documents/upload` 端点
+- [x] T022: 集成 `translate_to_multiple_languages()` 方法
+- [x] T023: 保存翻译结果到 `ParseResult.translations`
+- [x] T024: 添加集成测试（待运行）
+- [x] T025: 更新前端 `DocumentUploadDialog` 组件
+- [x] T026: 添加多语言选择器UI
+- [x] T027: 更新文档上传API调用
+- [x] T028: 添加翻译进度显示（使用上传进度）
+- [x] T029: 测试文档上传多语言翻译
 - [x] T030: 前端API函数 `translateToMultipleLanguages()`
 - [x] T031: 更新 `UploadDocumentOptions` 支持 `target_langs`
-- [x] T030: 添加类型定义
 
-**待完成**:
-- [ ] T021: 更新后端 `POST /api/v1/documents/upload` 端点
-- [ ] T022: 集成 `translate_to_multiple_languages()` 方法
-- [ ] T023: 保存翻译结果到数据库
-- [ ] T024: 添加集成测试
-- [ ] T025-T029: 更新前端 `DocumentUploadDialog` 组件
+**提交记录**:
+- Commit: `feat: add multi-language support for document upload (Phase 4)`
+- 后端更新:
+  - 支持 `target_langs` 参数（逗号分隔）
+  - 为每种目标语言并发翻译
+  - 翻译结果存储在 `translations` 字典中
+- 前端更新:
+  - 语言选择器UI（7种语言）
+  - 全选/清空按钮
+  - 显示选中语言数量
+  - 支持多语言数组传递
+
+**核心功能**:
+- ✅ 上传文档并翻译到多种语言
+- ✅ 可视化语言选择（带原生名称）
+- ✅ 向后兼容单语言参数
+- ✅ 翻译结果按语言存储
 
 ### Phase 7: 网站模块完整多语言支持 (0/18 tasks) ⏳
 
