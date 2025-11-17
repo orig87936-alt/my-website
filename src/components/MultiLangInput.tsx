@@ -83,26 +83,28 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
     });
   };
 
-  // Get languages to translate to (exclude languages that already have values)
+  // Get languages to translate to (all languages except primary)
   const getTargetLangs = (): SupportedLanguage[] => {
+    return LANGUAGE_CODES.filter(lang => lang !== primaryLang);
+  };
+
+  // Get languages that don't have values yet
+  const getEmptyTargetLangs = (): SupportedLanguage[] => {
     return LANGUAGE_CODES.filter(lang => lang !== primaryLang && !values[lang]);
   };
 
   const InputComponent = type === 'textarea' ? 'textarea' : 'input';
 
-  // Detect if we're in a dark or light theme context
-  const isDarkTheme = typeof window !== 'undefined' &&
-    (document.body.classList.contains('dark') ||
-     document.documentElement.classList.contains('dark') ||
-     getComputedStyle(document.body).backgroundColor === 'rgb(10, 37, 64)');
+  // Always use light theme styling (white background)
+  const isDarkTheme = false;
 
   return (
     <div className="space-y-2 multilang-input-wrapper">
       {/* Label and Batch Translate Button */}
       <div className="flex items-center justify-between">
-        <label className={`block text-sm font-medium ${isDarkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
+        <label className="block text-sm font-semibold text-gray-900">
           {label}
-          {requiredLangs.length > 0 && <span className="text-red-500 ml-1">*</span>}
+          {requiredLangs.length > 0 && <span className="text-red-600 ml-1">*</span>}
         </label>
 
         {primaryValue && getTargetLangs().length > 0 && (
@@ -119,18 +121,14 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Primary Language Input (Always Visible) */}
       <div className="space-y-2">
-        <div className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>
+        <div className="text-sm font-semibold text-gray-800">
           {LANGUAGE_LABELS[primaryLang]}
         </div>
         <InputComponent
           type={type === 'text' ? 'text' : undefined}
           value={primaryValue}
           onChange={(e) => handleFieldChange(primaryLang, e.target.value)}
-          className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a4e4] ${
-            isDarkTheme
-              ? 'bg-white/5 border-white/10 text-white'
-              : 'bg-white border-gray-300 text-gray-900'
-          }`}
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00a4e4] focus:border-[#00a4e4]"
           placeholder={placeholder}
           rows={type === 'textarea' ? rows : undefined}
         />
@@ -140,11 +138,7 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex items-center gap-1 text-sm font-medium transition-colors ${
-          isDarkTheme
-            ? 'text-gray-400 hover:text-white'
-            : 'text-blue-600 hover:text-blue-800'
-        }`}
+        className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
       >
         {isExpanded ? (
           <>
@@ -161,14 +155,14 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Other Languages (Collapsible) */}
       {isExpanded && (
-        <div className={`space-y-3 pl-4 border-l-2 ${isDarkTheme ? 'border-white/10' : 'border-gray-300'}`}>
+        <div className="space-y-3 pl-4 border-l-2 border-gray-300">
           {LANGUAGE_CODES.filter(lang => lang !== primaryLang).map((lang) => (
             <div key={lang} className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>
+                <div className="text-sm font-semibold text-gray-800">
                   {LANGUAGE_LABELS[lang]}
                 </div>
-                {primaryValue && !values[lang] && (
+                {primaryValue && (
                   <TranslateButton
                     text={primaryValue}
                     sourceLang={primaryLang}
@@ -184,13 +178,9 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
                 value={values[lang] || ''}
                 onChange={(e) => handleFieldChange(lang, e.target.value)}
                 className={`
-                  w-full px-3 py-2 text-sm border rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-[#00a4e4]
+                  w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900
+                  focus:outline-none focus:ring-2 focus:ring-[#00a4e4] focus:border-[#00a4e4]
                   ${lang === 'ar' ? 'text-right' : ''}
-                  ${isDarkTheme
-                    ? 'bg-white/5 border-white/10 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
-                  }
                 `}
                 placeholder={placeholder}
                 rows={type === 'textarea' ? rows : undefined}
@@ -203,7 +193,7 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Required Languages Validation */}
       {requiredLangs.some(lang => !values[lang]) && (
-        <div className="text-sm text-red-600 font-medium">
+        <div className="text-sm text-red-600 font-semibold">
           必填语言: {requiredLangs.filter(lang => !values[lang]).map(lang => LANGUAGE_LABELS[lang]).join(', ')}
         </div>
       )}
