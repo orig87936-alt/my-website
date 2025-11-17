@@ -15,6 +15,9 @@ from app.schemas.translation import (
     TranslateResponse,
     BatchTranslateRequest,
     BatchTranslateResponse,
+    MultiLangTranslateRequest,
+    MultiLangTranslateResponse,
+    MultiLangTranslateResult,
     DetectLanguageRequest,
     DetectLanguageResponse,
     TranslationHistoryResponse,
@@ -161,6 +164,85 @@ async def batch_translate(
         raise HTTPException(status_code=500, detail=f"Batch translation failed: {str(e)}")
 
 
+@router.post(
+    "/translate-multiple",
+    response_model=MultiLangTranslateResponse,
+    summary="Translate to multiple languages",
+    description="T012: Translate text to multiple target languages with concurrent processing"
+)
+@limiter.limit("10/minute")  # 10 requests per minute (expensive operation)
+async def translate_to_multiple_languages(
+    translate_request: MultiLangTranslateRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> MultiLangTranslateResponse:
+    """
+    Translate text to multiple target languages with concurrent processing.
+
+    **Features:**
+    - Concurrent translation to multiple languages (max 4 concurrent)
+    - Automatic language detection
+    - SHA-256 based caching for each language pair
+    - Markdown image preservation
+    - Error handling per language (partial success allowed)
+
+    **Parameters:**
+    - **text**: Text to translate (1-50000 characters)
+    - **source_lang**: Source language (auto-detect if not provided)
+    - **target_langs**: List of target languages (1-7 languages)
+      - Supported: zh, zh-tw, en, ja, es, fr, ar, hi
+
+    **Rate Limit:** 10 requests per minute
+
+    **Returns:**
+    - **results**: Translation results by language code
+      - Each result contains: translated_text, cached, images_count, error
+    - **source_lang**: Detected/provided source language
+    - **total_langs**: Total number of target languages
+    - **success_count**: Number of successful translations
+    - **failed_count**: Number of failed translations
+
+    **Example:**
+    ```json
+    {
+      "text": "这是一个测试",
+      "source_lang": "zh",
+      "target_langs": ["en", "ja", "es"]
+    }
+    ```
+    """
+    try:
+        # Create translation service
+        translation_service = TranslationService(db)
+
+        # Translate to multiple languages
+        result = await translation_service.translate_to_multiple_languages(
+            text=translate_request.text,
+            source_lang=translate_request.source_lang,
+            target_langs=translate_request.target_langs,
+            preserve_markdown_images=True,
+            max_concurrent=4
+        )
+
+        # Convert results to response format
+        results_dict = {}
+        for lang, lang_result in result['results'].items():
+            results_dict[lang] = MultiLangTranslateResult(**lang_result)
+
+        return MultiLangTranslateResponse(
+            results=results_dict,
+            source_lang=result['source_lang'],
+            total_langs=result['total_langs'],
+            success_count=result['success_count'],
+            failed_count=result['failed_count']
+        )
+
+    except Exception as e:
+        print(f"❌ Multi-language translation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Multi-language translation failed: {str(e)}")
+
+
 @router.post("/detect-language", response_model=DetectLanguageResponse, summary="Detect text language")
 async def detect_language(
     request: DetectLanguageRequest,
@@ -169,23 +251,23 @@ async def detect_language(
 ) -> DetectLanguageResponse:
     """
     Detect the language of text
-    
+
     - **text**: Text to detect (1-1000 characters)
-    
+
     Returns detected language code and confidence score.
     """
     try:
         # Create translation service
         translation_service = TranslationService(db)
-        
+
         # Detect language
         detected_lang, confidence = await translation_service.detect_language(request.text)
-        
+
         return DetectLanguageResponse(
             detected_lang=detected_lang,
             confidence=confidence
         )
-        
+
     except Exception as e:
         print(f"❌ Language detection error: {e}")
         raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")

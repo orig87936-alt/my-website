@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field, field_validator
 class TranslateRequest(BaseModel):
     """Request schema for single field translation"""
     text: str = Field(..., min_length=1, max_length=50000, description="Text to translate (up to 50000 characters)")
-    source_lang: Optional[str] = Field(None, pattern="^(zh|en)$", description="Source language (auto-detect if not provided)")
-    target_lang: str = Field(..., pattern="^(zh|en)$", description="Target language")
+    source_lang: Optional[str] = Field(None, pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Source language (auto-detect if not provided)")
+    target_lang: str = Field(..., pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Target language")
 
     @field_validator('text')
     @classmethod
@@ -38,14 +38,58 @@ class BatchTranslateField(BaseModel):
 class BatchTranslateRequest(BaseModel):
     """Request schema for batch translation"""
     fields: List[BatchTranslateField] = Field(..., min_length=1, max_length=10, description="Fields to translate")
-    source_lang: Optional[str] = Field(None, pattern="^(zh|en)$", description="Source language (auto-detect if not provided)")
-    target_lang: str = Field(..., pattern="^(zh|en)$", description="Target language")
+    source_lang: Optional[str] = Field(None, pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Source language (auto-detect if not provided)")
+    target_lang: str = Field(..., pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Target language")
     article_id: Optional[UUID] = Field(None, description="Article ID for logging (optional)")
+
+
+class MultiLangTranslateRequest(BaseModel):
+    """T011: Request schema for multi-language translation"""
+    text: str = Field(..., min_length=1, max_length=50000, description="Text to translate (up to 50000 characters)")
+    source_lang: Optional[str] = Field(None, pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Source language (auto-detect if not provided)")
+    target_langs: List[str] = Field(..., min_items=1, max_items=7, description="Target languages (1-7 languages)")
+
+    @field_validator('text')
+    @classmethod
+    def validate_text(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Text cannot be empty")
+        return v.strip()
+
+    @field_validator('target_langs')
+    @classmethod
+    def validate_target_langs(cls, v):
+        # 验证所有语言代码都是支持的
+        supported = {'zh', 'zh-tw', 'en', 'ja', 'es', 'fr', 'ar', 'hi'}
+        for lang in v:
+            if lang not in supported:
+                raise ValueError(f"Unsupported language: {lang}")
+        # 去重
+        return list(set(v))
 
 
 class DetectLanguageRequest(BaseModel):
     """Request schema for language detection"""
     text: str = Field(..., min_length=1, max_length=1000, description="Text to detect language")
+
+
+class MultiLangTranslateResult(BaseModel):
+    """T011: Single language result in multi-language translation"""
+    translated_text: Optional[str] = Field(None, description="Translated text (None if failed)")
+    cached: bool = Field(..., description="Whether result was from cache")
+    images_count: int = Field(default=0, description="Number of images preserved")
+    error: Optional[str] = Field(None, description="Error message if translation failed")
+
+
+class MultiLangTranslateResponse(BaseModel):
+    """T011: Response schema for multi-language translation"""
+    results: dict[str, MultiLangTranslateResult] = Field(..., description="Translation results by language code")
+    source_lang: str = Field(..., description="Detected or provided source language")
+    total_langs: int = Field(..., description="Total number of target languages")
+    success_count: int = Field(..., description="Number of successful translations")
+    failed_count: int = Field(..., description="Number of failed translations")
+
+    model_config = {"from_attributes": True}
 
 
 # Translation response schemas

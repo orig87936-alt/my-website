@@ -17,6 +17,40 @@ from app.config import get_settings
 
 settings = get_settings()
 
+# ============================================================================
+# 多语言支持常量 (T004: 8种语言支持)
+# ============================================================================
+
+# 支持的8种语言
+SUPPORTED_LANGUAGES = ['zh', 'zh-tw', 'en', 'ja', 'es', 'fr', 'ar', 'hi']
+
+# 语言名称映射
+LANGUAGE_NAMES = {
+    'zh': 'Chinese (Simplified)',
+    'zh-tw': 'Chinese (Traditional)',
+    'en': 'English',
+    'ja': 'Japanese',
+    'es': 'Spanish',
+    'fr': 'French',
+    'ar': 'Arabic',
+    'hi': 'Hindi'
+}
+
+# 前端语言代码到后端语言代码的映射
+FRONTEND_TO_BACKEND_LANG = {
+    'zh-CN': 'zh',
+    'zh-TW': 'zh-tw',
+    'en': 'en',
+    'ja': 'ja',
+    'es': 'es',
+    'fr': 'fr',
+    'ar': 'ar',
+    'hi': 'hi'
+}
+
+# 后端语言代码到前端语言代码的映射
+BACKEND_TO_FRONTEND_LANG = {v: k for k, v in FRONTEND_TO_BACKEND_LANG.items()}
+
 
 class TranslationService:
     """Translation service with caching and logging"""
@@ -115,34 +149,52 @@ class TranslationService:
     
     async def detect_language(self, text: str) -> Tuple[str, float]:
         """
-        Detect language of text
-        
+        Detect language of text (T006: 支持8种语言检测)
+
         Args:
             text: Text to detect
-            
+
         Returns:
             Tuple of (language_code, confidence)
-            
+
         Raises:
             Exception: If language detection fails
         """
         try:
             # Use langdetect library
             detected = detect(text)
-            
-            # Map to our supported languages (zh, en)
-            if detected in ['zh-cn', 'zh-tw', 'zh']:
-                return ('zh', 0.95)
-            elif detected == 'en':
-                return ('en', 0.95)
+
+            # Map langdetect codes to our supported languages
+            language_map = {
+                'zh-cn': 'zh',
+                'zh-tw': 'zh-tw',
+                'zh': 'zh',
+                'en': 'en',
+                'ja': 'ja',
+                'es': 'es',
+                'fr': 'fr',
+                'ar': 'ar',
+                'hi': 'hi'
+            }
+
+            # Check if detected language is in our supported list
+            if detected in language_map:
+                mapped_lang = language_map[detected]
+                return (mapped_lang, 0.95)
             else:
-                # Default to Chinese if not English
-                return ('zh', 0.5)
-                
+                # Try to find a close match
+                for key, value in language_map.items():
+                    if detected.startswith(key) or key.startswith(detected):
+                        return (value, 0.8)
+
+                # Default to English if no match found
+                print(f"⚠️  Unsupported language detected: {detected}, defaulting to English")
+                return ('en', 0.5)
+
         except LangDetectException as e:
             print(f"⚠️  Language detection failed: {e}")
-            # Default to Chinese
-            return ('zh', 0.3)
+            # Default to English
+            return ('en', 0.3)
     
     async def _get_from_cache(
         self,
@@ -445,6 +497,114 @@ class TranslationService:
             print(f"⚠️  Failed to log translation: {e}")
             async with self._db_lock:
                 await self.db.rollback()
+
+    async def translate_to_multiple_languages(
+        self,
+        text: str,
+        source_lang: Optional[str] = None,
+        target_langs: List[str] = None,
+        preserve_markdown_images: bool = True,
+        max_concurrent: int = 4
+    ) -> Dict[str, Any]:
+        """
+        T008: 将文本翻译到多个目标语言（并发处理）
+
+        Args:
+            text: 要翻译的文本
+            source_lang: 源语言代码（如果为None则自动检测）
+            target_langs: 目标语言代码列表
+            preserve_markdown_images: 是否保留Markdown图片
+            max_concurrent: 最大并发翻译数（默认4）
+
+        Returns:
+            Dict，包含：
+            - results: Dict[lang_code, translation_result]
+            - source_lang: 检测到的源语言
+            - total_langs: 总语言数
+            - success_count: 成功翻译数
+            - failed_count: 失败翻译数
+        """
+        # 检测源语言（如果未提供）
+        if not source_lang:
+            source_lang, confidence = await self.detect_language(text)
+            print(f"🔍 Detected source language: {source_lang} (confidence: {confidence:.2f})")
+
+        # 如果未提供目标语言列表，默认翻译到所有支持的语言
+        if target_langs is None:
+            target_langs = [lang for lang in SUPPORTED_LANGUAGES if lang != source_lang]
+        else:
+            # 过滤掉源语言
+            target_langs = [lang for lang in target_langs if lang != source_lang]
+
+        if not target_langs:
+            print("⚠️  No target languages specified or all target languages are same as source")
+            return {
+                'results': {},
+                'source_lang': source_lang,
+                'total_langs': 0,
+                'success_count': 0,
+                'failed_count': 0
+            }
+
+        print(f"🌍 Translating from {source_lang} to {len(target_langs)} languages: {', '.join(target_langs)}")
+
+        # 创建翻译任务
+        async def translate_single(target_lang: str) -> Tuple[str, Dict[str, Any]]:
+            """翻译到单个目标语言"""
+            try:
+                result = await self.translate_text(
+                    text=text,
+                    source_lang=source_lang,
+                    target_lang=target_lang,
+                    preserve_markdown_images=preserve_markdown_images
+                )
+                return (target_lang, {
+                    'translated_text': result['translated_text'],
+                    'cached': result.get('cached', False),
+                    'images_count': result.get('images_count', 0),
+                    'error': None
+                })
+            except Exception as e:
+                print(f"❌ Translation to {target_lang} failed: {e}")
+                return (target_lang, {
+                    'translated_text': None,
+                    'cached': False,
+                    'images_count': 0,
+                    'error': str(e)
+                })
+
+        # 使用信号量控制并发数
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def translate_with_semaphore(target_lang: str):
+            async with semaphore:
+                return await translate_single(target_lang)
+
+        # 并发执行所有翻译任务
+        tasks = [translate_with_semaphore(lang) for lang in target_langs]
+        results_list = await asyncio.gather(*tasks)
+
+        # 整理结果
+        results = {}
+        success_count = 0
+        failed_count = 0
+
+        for lang, result in results_list:
+            results[lang] = result
+            if result['error'] is None:
+                success_count += 1
+                print(f"✅ {lang}: {len(result['translated_text'])} chars (cached: {result['cached']})")
+            else:
+                failed_count += 1
+                print(f"❌ {lang}: {result['error']}")
+
+        return {
+            'results': results,
+            'source_lang': source_lang,
+            'total_langs': len(target_langs),
+            'success_count': success_count,
+            'failed_count': failed_count
+        }
 
     async def cleanup_expired_cache(self, days: int = 30) -> int:
         """
