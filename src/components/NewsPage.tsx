@@ -7,6 +7,10 @@ import { motion } from 'motion/react';
 import { liveNewsList as initialLiveNewsList, LiveNewsItem } from '../data/liveNewsData';
 import { focusPointNews as initialFocusPointNews, featuredArticles as initialFeaturedArticles, FocusPointNews, FeaturedArticle } from '../data/featuredNewsData';
 import { TranslateButton } from './TranslateButton';
+// T032-T050: Import V2 modals with 8-language support
+import { EditFocusPointModalV2 } from './EditFocusPointModalV2';
+import { EditFeaturedModalV2 } from './EditFeaturedModalV2';
+import { AddNewsModalV2 } from './AddNewsModalV2';
 
 interface NewsPageProps {
   onNavigateToArticle: (articleId: string) => void;
@@ -592,9 +596,9 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
         </div>
       </section>
 
-      {/* Add/Edit News Modal */}
+      {/* Add/Edit News Modal (T045-T048: V2 with 8-language support) */}
       {isAddNewsModalOpen && (
-        <AddNewsModal
+        <AddNewsModalV2
           news={editingNews}
           onSave={handleSaveNews}
           onClose={() => {
@@ -605,9 +609,9 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
         />
       )}
 
-      {/* Edit Focus Point Modal */}
+      {/* Edit Focus Point Modal (T032-T037: V2 with 8-language support) */}
       {isFocusEditModalOpen && (
-        <EditFocusPointModal
+        <EditFocusPointModalV2
           focusPoint={focusPointNews}
           onSave={handleSaveFocusPoint}
           onClose={() => setIsFocusEditModalOpen(false)}
@@ -615,9 +619,9 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
         />
       )}
 
-      {/* Add/Edit Featured Article Modal */}
+      {/* Add/Edit Featured Article Modal (T038-T041: V2 with 8-language support) */}
       {isFeaturedModalOpen && (
-        <EditFeaturedModal
+        <EditFeaturedModalV2
           article={editingFeatured}
           onSave={handleSaveFeatured}
           onClose={() => {

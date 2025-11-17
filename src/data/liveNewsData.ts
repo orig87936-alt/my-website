@@ -1,26 +1,17 @@
 // 实时新闻数据
 // 这个文件存储新闻页面的实时新闻列表
 // 管理员可以通过编辑这个文件来添加、修改或删除新闻
+// T045-T050: 支持8种语言
+
+import { MultiLangContent } from './featuredNewsData';
 
 export interface LiveNewsItem {
   id: string;
   time: string;
-  readTime: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  title: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
+  readTime: MultiLangContent;
+  title: MultiLangContent;
   category: 'business' | 'technology' | 'finance' | 'research';
-  summary: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
+  summary: MultiLangContent;
 }
 
 // 实时新闻列表

@@ -7,13 +7,16 @@ import { Button } from './ui/button';
 import { Languages, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// T032-T050: Support 8 languages
+type SupportedLanguage = 'zh' | 'zh-tw' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+
 interface TranslateButtonProps {
   /** Text to translate */
   text: string;
   /** Source language (auto-detect if not provided) */
-  sourceLang?: 'zh' | 'en';
+  sourceLang?: SupportedLanguage;
   /** Target language */
-  targetLang: 'zh' | 'en';
+  targetLang: SupportedLanguage;
   /** Callback when translation completes */
   onTranslated: (translatedText: string) => void;
   /** Button size */
@@ -87,10 +90,19 @@ export const TranslateButton: React.FC<TranslateButtonProps> = ({
       console.log('📝 Calling onTranslated with text length:', result.translated_text.length);
       onTranslated(result.translated_text);
 
-      // Show success message
-      const langNames = { zh: '中文', en: '英文' };
-      const sourceName = langNames[result.source_lang];
-      const targetName = langNames[result.target_lang];
+      // Show success message (T032-T050: 8 languages)
+      const langNames: Record<string, string> = {
+        zh: '简体中文',
+        'zh-tw': '繁体中文',
+        en: '英文',
+        ja: '日语',
+        es: '西班牙语',
+        fr: '法语',
+        ar: '阿拉伯语',
+        hi: '印地语'
+      };
+      const sourceName = langNames[result.source_lang] || result.source_lang;
+      const targetName = langNames[result.target_lang] || result.target_lang;
 
       if (result.cached) {
         toast.success(`翻译完成 (${sourceName} → ${targetName}) - 来自缓存`);

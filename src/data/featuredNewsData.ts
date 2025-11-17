@@ -1,54 +1,30 @@
 // 焦点新闻和特色文章数据
 // 管理员可以通过编辑这个文件来修改焦点新闻和特色文章
+// T032-T044: 支持8种语言
+
+import { Language } from '../i18n/translations';
+
+// 多语言内容类型（支持8种语言）
+export type MultiLangContent = {
+  [K in Language]?: string;
+};
 
 export interface FocusPointNews {
   id: string;
   image: string;
-  date: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  title: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  summary: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  fullContent: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
+  date: MultiLangContent;
+  title: MultiLangContent;
+  summary: MultiLangContent;
+  fullContent: MultiLangContent;
 }
 
 export interface FeaturedArticle {
   id: string;
   image: string;
-  category: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  date: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  title: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
-  description: {
-    'zh-CN': string;
-    'zh-TW': string;
-    'en': string;
-  };
+  category: MultiLangContent;
+  date: MultiLangContent;
+  title: MultiLangContent;
+  description: MultiLangContent;
   link: string;
 }
 

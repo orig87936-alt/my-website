@@ -511,7 +511,7 @@ export function ConsultingPage() {
 
       {/* Booking Dialog */}
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto bg-[#0a2540] border-white/10 my-4">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] bg-[#0a2540] border-white/10 my-4 flex flex-col">
           {/* Close Button */}
           <button
             onClick={() => setIsBookingOpen(false)}
@@ -520,7 +520,7 @@ export function ConsultingPage() {
             <X className="w-5 h-5" />
           </button>
 
-          <DialogHeader>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-xl text-white pr-8">
               {t('consulting.appointment.calendar.title')}
             </DialogTitle>
@@ -529,7 +529,7 @@ export function ConsultingPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 overflow-y-auto flex-1 pr-2">
             {/* Contact Information */}
             <div className="space-y-3">
               <h3 className="text-base font-medium text-white">
@@ -669,7 +669,10 @@ export function ConsultingPage() {
                 <p className="text-red-400 text-xs">{bookingError}</p>
               </div>
             )}
+          </div>
 
+          {/* Footer - Fixed at bottom */}
+          <div className="flex-shrink-0 space-y-3 pt-4 border-t border-white/10">
             {/* Submit Button */}
             {selectedDate && selectedTime && (
               <Button
@@ -685,10 +688,10 @@ export function ConsultingPage() {
             )}
 
             {/* Help Text */}
-            <div className="text-center text-xs text-gray-500 pt-2 border-t border-white/5">
+            <div className="text-center text-xs text-gray-500">
               {language.startsWith('zh')
-                ? '💡 提示：可以滚动查看所有内容，点击右上角 ✕ 或背景区域关闭'
-                : '💡 Tip: Scroll to view all content, click ✕ or background to close'}
+                ? '💡 提示：可以滚动查看所有内容'
+                : '💡 Tip: Scroll to view all content'}
             </div>
           </div>
         </DialogContent>
