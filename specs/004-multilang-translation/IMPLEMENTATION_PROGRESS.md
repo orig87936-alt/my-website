@@ -8,8 +8,8 @@
 
 ## 📊 总体进度
 
-- **已完成**: 30/104 任务 (28.8%)
-- **进行中**: Phase 4-7
+- **已完成**: 49/104 任务 (47.1%)
+- **进行中**: Phase 4, 7
 - **待完成**: Phase 8-10
 
 ---
@@ -107,22 +107,68 @@
 
 ---
 
+---
+
+### Phase 5: 新闻编辑多语言支持 (13/13 tasks) ✅
+
+- [x] T032-T037: 焦点新闻编辑（6 tasks）
+- [x] T038-T041: 特色文章编辑（4 tasks）
+- [x] T042-T044: 数据存储（3 tasks）
+
+**提交记录**:
+- Commit: `feat(frontend): add 8-language support for news editing (Phase 5-6)`
+- 新增组件:
+  - `MultiLangInput.tsx` - 可复用的多语言输入组件
+  - `MultiLangTranslateButton.tsx` - 批量翻译按钮组件
+  - `EditFocusPointModalV2.tsx` - 焦点新闻编辑器（8语言）
+  - `EditFeaturedModalV2.tsx` - 特色文章编辑器（8语言）
+  - `AddNewsModalV2.tsx` - Latest新闻编辑器（8语言）
+- 更新组件:
+  - `NewsPage.tsx` - 使用V2模态框
+  - `TranslateButton.tsx` - 支持8种语言
+- 更新数据接口:
+  - `featuredNewsData.ts` - 使用 `MultiLangContent` 类型
+  - `liveNewsData.ts` - 使用 `MultiLangContent` 类型
+
+**核心功能**:
+- ✅ 焦点新闻支持8种语言编辑
+- ✅ 特色文章支持8种语言编辑
+- ✅ Latest新闻支持8种语言编辑
+- ✅ 批量翻译到所有语言（一键翻译）
+- ✅ 单个语言翻译按钮
+- ✅ 翻译进度实时显示
+- ✅ 语言字段展开/收起
+- ✅ 阿拉伯语RTL布局支持
+- ✅ 必填语言验证（zh, en）
+
+---
+
+### Phase 6: Latest新闻多语言支持 (6/6 tasks) ✅
+
+- [x] T045-T048: Latest新闻编辑（4 tasks）
+- [x] T049-T050: 前端显示（2 tasks）
+
+**已包含在 Phase 5 的提交中**
+
+---
+
 ## 🔄 进行中的阶段
 
-### Phase 5: 新闻编辑多语言支持 (0/13 tasks)
+### Phase 4: 文档上传多语言翻译 (3/11 tasks) ⏳
 
-**待实施任务**:
-- T032-T037: 焦点新闻编辑（6 tasks）
-- T038-T041: 特色文章编辑（4 tasks）
-- T042-T044: 数据存储（3 tasks）
+**已完成**:
+- [x] T030: 前端API函数 `translateToMultipleLanguages()`
+- [x] T031: 更新 `UploadDocumentOptions` 支持 `target_langs`
+- [x] T030: 添加类型定义
 
-### Phase 6: Latest新闻多语言支持 (0/6 tasks)
+**待完成**:
+- [ ] T021: 更新后端 `POST /api/v1/documents/upload` 端点
+- [ ] T022: 集成 `translate_to_multiple_languages()` 方法
+- [ ] T023: 保存翻译结果到数据库
+- [ ] T024: 添加集成测试
+- [ ] T025-T029: 更新前端 `DocumentUploadDialog` 组件
 
-**待实施任务**:
-- T045-T048: Latest新闻编辑（4 tasks）
-- T049-T050: 前端显示（2 tasks）
-
-### Phase 7: 网站模块完整多语言支持 (0/18 tasks)
+### Phase 7: 网站模块完整多语言支持 (0/18 tasks) ⏳
 
 **待实施任务**:
 - T051-T056: i18n翻译文件补全（6 tasks）
@@ -261,14 +307,16 @@
 ## 📊 代码统计
 
 - **后端文件修改**: 6个文件
-- **前端文件修改**: 1个文件
-- **新增代码行数**: ~800行
+- **前端文件修改**: 11个文件
+- **新增前端组件**: 5个组件
+- **新增代码行数**: ~1800行
 - **数据库迁移**: 1个迁移文件
 - **API端点新增**: 1个端点
 - **测试脚本**: 1个文件
+- **文档文件**: 7个文件（含测试指南）
 
 ---
 
-**最后更新**: 2025-11-17 12:52 UTC  
-**下次更新**: 完成 Phase 4-6 后
+**最后更新**: 2025-11-17 14:30 UTC
+**下次更新**: 完成 Phase 4, 7 后
 
