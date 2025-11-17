@@ -20,26 +20,56 @@ class Article(Base):
     category = Column(String(50), nullable=False, index=True)
     status = Column(String(20), nullable=False, default="published", server_default="published")
     
-    # Titles
+    # Titles (T018: 8种语言支持)
     title_zh = Column(Text, nullable=False)
     title_en = Column(Text, nullable=False)
-    
+    title_zh_tw = Column(Text, nullable=True)  # 繁体中文
+    title_ja = Column(Text, nullable=True)     # 日语
+    title_es = Column(Text, nullable=True)     # 西班牙语
+    title_fr = Column(Text, nullable=True)     # 法语
+    title_ar = Column(Text, nullable=True)     # 阿拉伯语
+    title_hi = Column(Text, nullable=True)     # 印地语
+
     # Summaries (no length limit - using Text type)
     summary_zh = Column(Text, nullable=False)
     summary_en = Column(Text, nullable=False)
-    
+    summary_zh_tw = Column(Text, nullable=True)
+    summary_ja = Column(Text, nullable=True)
+    summary_es = Column(Text, nullable=True)
+    summary_fr = Column(Text, nullable=True)
+    summary_ar = Column(Text, nullable=True)
+    summary_hi = Column(Text, nullable=True)
+
     # Lead paragraphs
     lead_zh = Column(Text, nullable=True)
     lead_en = Column(Text, nullable=True)
-    
+    lead_zh_tw = Column(Text, nullable=True)
+    lead_ja = Column(Text, nullable=True)
+    lead_es = Column(Text, nullable=True)
+    lead_fr = Column(Text, nullable=True)
+    lead_ar = Column(Text, nullable=True)
+    lead_hi = Column(Text, nullable=True)
+
     # Content (JSONB/JSON array of content blocks)
     content_zh = Column(JSONB, nullable=False)
     content_en = Column(JSONB, nullable=False)
+    content_zh_tw = Column(JSONB, nullable=True)
+    content_ja = Column(JSONB, nullable=True)
+    content_es = Column(JSONB, nullable=True)
+    content_fr = Column(JSONB, nullable=True)
+    content_ar = Column(JSONB, nullable=True)
+    content_hi = Column(JSONB, nullable=True)
     
     # Image
     image_url = Column(Text, nullable=True)
     image_caption_zh = Column(Text, nullable=True)
     image_caption_en = Column(Text, nullable=True)
+    image_caption_zh_tw = Column(Text, nullable=True)
+    image_caption_ja = Column(Text, nullable=True)
+    image_caption_es = Column(Text, nullable=True)
+    image_caption_fr = Column(Text, nullable=True)
+    image_caption_ar = Column(Text, nullable=True)
+    image_caption_hi = Column(Text, nullable=True)
     
     # Metadata
     author = Column(String(100), nullable=True)

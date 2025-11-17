@@ -39,18 +39,52 @@ class ContentBlock(BaseModel):
 
 # Base article schema
 class ArticleBase(BaseModel):
-    """Base article schema with common fields"""
+    """Base article schema with common fields (T019: 8-language support)"""
     category: str = Field(..., description="Article category")
     status: str = Field(default="published", description="Article status")
-    title_zh: str = Field(..., min_length=1, max_length=500, description="Chinese title")
+
+    # Titles (8 languages)
+    title_zh: str = Field(..., min_length=1, max_length=500, description="Chinese (Simplified) title")
     title_en: str = Field(..., min_length=1, max_length=500, description="English title")
-    summary_zh: str = Field(..., min_length=1, description="Chinese summary")
+    title_zh_tw: Optional[str] = Field(None, min_length=1, max_length=500, description="Chinese (Traditional) title")
+    title_ja: Optional[str] = Field(None, min_length=1, max_length=500, description="Japanese title")
+    title_es: Optional[str] = Field(None, min_length=1, max_length=500, description="Spanish title")
+    title_fr: Optional[str] = Field(None, min_length=1, max_length=500, description="French title")
+    title_ar: Optional[str] = Field(None, min_length=1, max_length=500, description="Arabic title")
+    title_hi: Optional[str] = Field(None, min_length=1, max_length=500, description="Hindi title")
+
+    # Summaries (8 languages)
+    summary_zh: str = Field(..., min_length=1, description="Chinese (Simplified) summary")
     summary_en: str = Field(..., min_length=1, description="English summary")
-    lead_zh: Optional[str] = Field(None, description="Chinese lead paragraph")
+    summary_zh_tw: Optional[str] = Field(None, min_length=1, description="Chinese (Traditional) summary")
+    summary_ja: Optional[str] = Field(None, min_length=1, description="Japanese summary")
+    summary_es: Optional[str] = Field(None, min_length=1, description="Spanish summary")
+    summary_fr: Optional[str] = Field(None, min_length=1, description="French summary")
+    summary_ar: Optional[str] = Field(None, min_length=1, description="Arabic summary")
+    summary_hi: Optional[str] = Field(None, min_length=1, description="Hindi summary")
+
+    # Lead paragraphs (8 languages)
+    lead_zh: Optional[str] = Field(None, description="Chinese (Simplified) lead paragraph")
     lead_en: Optional[str] = Field(None, description="English lead paragraph")
+    lead_zh_tw: Optional[str] = Field(None, description="Chinese (Traditional) lead paragraph")
+    lead_ja: Optional[str] = Field(None, description="Japanese lead paragraph")
+    lead_es: Optional[str] = Field(None, description="Spanish lead paragraph")
+    lead_fr: Optional[str] = Field(None, description="French lead paragraph")
+    lead_ar: Optional[str] = Field(None, description="Arabic lead paragraph")
+    lead_hi: Optional[str] = Field(None, description="Hindi lead paragraph")
+
+    # Image
     image_url: Optional[str] = Field(None, description="Article image URL")
-    image_caption_zh: Optional[str] = Field(None, description="Chinese image caption")
+    image_caption_zh: Optional[str] = Field(None, description="Chinese (Simplified) image caption")
     image_caption_en: Optional[str] = Field(None, description="English image caption")
+    image_caption_zh_tw: Optional[str] = Field(None, description="Chinese (Traditional) image caption")
+    image_caption_ja: Optional[str] = Field(None, description="Japanese image caption")
+    image_caption_es: Optional[str] = Field(None, description="Spanish image caption")
+    image_caption_fr: Optional[str] = Field(None, description="French image caption")
+    image_caption_ar: Optional[str] = Field(None, description="Arabic image caption")
+    image_caption_hi: Optional[str] = Field(None, description="Hindi image caption")
+
+    # Metadata
     author: Optional[str] = Field(None, max_length=100, description="Article author")
     
     @field_validator('category')
@@ -72,28 +106,78 @@ class ArticleBase(BaseModel):
 
 # Create article schema
 class ArticleCreate(ArticleBase):
-    """Schema for creating a new article"""
-    content_zh: List[ContentBlock] = Field(..., description="Chinese content blocks")
+    """Schema for creating a new article (T019: 8-language support)"""
+    # Content blocks (8 languages)
+    content_zh: List[ContentBlock] = Field(..., description="Chinese (Simplified) content blocks")
     content_en: List[ContentBlock] = Field(..., description="English content blocks")
+    content_zh_tw: Optional[List[ContentBlock]] = Field(None, description="Chinese (Traditional) content blocks")
+    content_ja: Optional[List[ContentBlock]] = Field(None, description="Japanese content blocks")
+    content_es: Optional[List[ContentBlock]] = Field(None, description="Spanish content blocks")
+    content_fr: Optional[List[ContentBlock]] = Field(None, description="French content blocks")
+    content_ar: Optional[List[ContentBlock]] = Field(None, description="Arabic content blocks")
+    content_hi: Optional[List[ContentBlock]] = Field(None, description="Hindi content blocks")
+
     published_at: Optional[datetime] = Field(None, description="Publication date (defaults to now)")
 
 
 # Update article schema
 class ArticleUpdate(BaseModel):
-    """Schema for updating an article (all fields optional)"""
+    """Schema for updating an article (all fields optional, T019: 8-language support)"""
     category: Optional[str] = None
     status: Optional[str] = None
+
+    # Titles (8 languages)
     title_zh: Optional[str] = Field(None, min_length=1, max_length=500)
     title_en: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_zh_tw: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_ja: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_es: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_fr: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_ar: Optional[str] = Field(None, min_length=1, max_length=500)
+    title_hi: Optional[str] = Field(None, min_length=1, max_length=500)
+
+    # Summaries (8 languages)
     summary_zh: Optional[str] = Field(None, min_length=1)
     summary_en: Optional[str] = Field(None, min_length=1)
+    summary_zh_tw: Optional[str] = Field(None, min_length=1)
+    summary_ja: Optional[str] = Field(None, min_length=1)
+    summary_es: Optional[str] = Field(None, min_length=1)
+    summary_fr: Optional[str] = Field(None, min_length=1)
+    summary_ar: Optional[str] = Field(None, min_length=1)
+    summary_hi: Optional[str] = Field(None, min_length=1)
+
+    # Lead paragraphs (8 languages)
     lead_zh: Optional[str] = None
     lead_en: Optional[str] = None
+    lead_zh_tw: Optional[str] = None
+    lead_ja: Optional[str] = None
+    lead_es: Optional[str] = None
+    lead_fr: Optional[str] = None
+    lead_ar: Optional[str] = None
+    lead_hi: Optional[str] = None
+
+    # Content blocks (8 languages)
     content_zh: Optional[List[ContentBlock]] = None
     content_en: Optional[List[ContentBlock]] = None
+    content_zh_tw: Optional[List[ContentBlock]] = None
+    content_ja: Optional[List[ContentBlock]] = None
+    content_es: Optional[List[ContentBlock]] = None
+    content_fr: Optional[List[ContentBlock]] = None
+    content_ar: Optional[List[ContentBlock]] = None
+    content_hi: Optional[List[ContentBlock]] = None
+
+    # Image
     image_url: Optional[str] = None
     image_caption_zh: Optional[str] = None
     image_caption_en: Optional[str] = None
+    image_caption_zh_tw: Optional[str] = None
+    image_caption_ja: Optional[str] = None
+    image_caption_es: Optional[str] = None
+    image_caption_fr: Optional[str] = None
+    image_caption_ar: Optional[str] = None
+    image_caption_hi: Optional[str] = None
+
+    # Metadata
     author: Optional[str] = Field(None, max_length=100)
     published_at: Optional[datetime] = None
     
@@ -118,34 +202,74 @@ class ArticleUpdate(BaseModel):
 
 # Article response schema (simplified for list view)
 class ArticleListItem(BaseModel):
-    """Simplified article schema for list view"""
+    """Simplified article schema for list view (T019: 8-language support)"""
     id: UUID
     category: str
     status: str
+
+    # Titles (8 languages)
     title_zh: str
     title_en: str
+    title_zh_tw: Optional[str] = None
+    title_ja: Optional[str] = None
+    title_es: Optional[str] = None
+    title_fr: Optional[str] = None
+    title_ar: Optional[str] = None
+    title_hi: Optional[str] = None
+
+    # Summaries (8 languages)
     summary_zh: str
     summary_en: str
+    summary_zh_tw: Optional[str] = None
+    summary_ja: Optional[str] = None
+    summary_es: Optional[str] = None
+    summary_fr: Optional[str] = None
+    summary_ar: Optional[str] = None
+    summary_hi: Optional[str] = None
+
     image_url: Optional[str] = None
     author: Optional[str] = None
     published_at: datetime
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 # Full article response schema
 class ArticleResponse(ArticleListItem):
-    """Full article schema with content"""
+    """Full article schema with content (T019: 8-language support)"""
+    # Lead paragraphs (8 languages)
     lead_zh: Optional[str] = None
     lead_en: Optional[str] = None
+    lead_zh_tw: Optional[str] = None
+    lead_ja: Optional[str] = None
+    lead_es: Optional[str] = None
+    lead_fr: Optional[str] = None
+    lead_ar: Optional[str] = None
+    lead_hi: Optional[str] = None
+
+    # Content blocks (8 languages)
     content_zh: List[Any]  # JSONB content blocks
     content_en: List[Any]  # JSONB content blocks
+    content_zh_tw: Optional[List[Any]] = None
+    content_ja: Optional[List[Any]] = None
+    content_es: Optional[List[Any]] = None
+    content_fr: Optional[List[Any]] = None
+    content_ar: Optional[List[Any]] = None
+    content_hi: Optional[List[Any]] = None
+
+    # Image captions (8 languages)
     image_caption_zh: Optional[str] = None
     image_caption_en: Optional[str] = None
-    
+    image_caption_zh_tw: Optional[str] = None
+    image_caption_ja: Optional[str] = None
+    image_caption_es: Optional[str] = None
+    image_caption_fr: Optional[str] = None
+    image_caption_ar: Optional[str] = None
+    image_caption_hi: Optional[str] = None
+
     class Config:
         from_attributes = True
 
