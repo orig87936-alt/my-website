@@ -7,12 +7,12 @@ import React, { useState, useEffect } from 'react';
 import { NEWS_CATEGORIES } from '../constants/newsCategories';
 import { ImageUploader } from './ImageUploader';
 import { TipTapEditor } from './TipTapEditor';
-import { articlesAPI, ArticleCreate, ContentBlock } from '../services/api';
+import { articlesAPI, ArticleCreate, ContentBlock, translateText } from '../services/api';
 import { uploadImage } from '../services/uploadAPI';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MultiLangInput } from './MultiLangInput';
 import { toast } from 'sonner';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Languages } from 'lucide-react';
 
 interface NewsCreateFormV2Props {
   onSuccess: () => void;
@@ -145,6 +145,52 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Translation handler
+  const handleTranslateContent = async () => {
+    const zhContent = formData.content.zh;
+    if (!zhContent || !zhContent.trim()) {
+      toast.error('请先填写中文内容');
+      return;
+    }
+
+    setIsTranslating(true);
+    // Only translate to supported languages (excluding zh which is the source)
+    const targetLangs = ['en', 'zh-tw', 'ja', 'es', 'fr', 'ar', 'hi'];
+    const translatedContent: MultiLangContent = { ...formData.content };
+
+    try {
+      toast.info('开始翻译内容到其他语言...');
+
+      // Translate to each language
+      for (const targetLang of targetLangs) {
+        try {
+          const result = await translateText({
+            text: zhContent,
+            source_lang: 'zh',
+            target_lang: targetLang as any,
+          });
+
+          if (result.translated_text) {
+            translatedContent[targetLang as keyof MultiLangContent] = result.translated_text;
+            toast.success(`${targetLang.toUpperCase()} 翻译完成`);
+          }
+        } catch (error) {
+          console.error(`Translation to ${targetLang} failed:`, error);
+          toast.error(`${targetLang.toUpperCase()} 翻译失败`);
+        }
+      }
+
+      setFormData({ ...formData, content: translatedContent });
+      toast.success('所有语言翻译完成！');
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast.error('翻译失败，请重试');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // Helper function to convert text to content blocks
   const textToContentBlocks = (text: string): ContentBlock[] => {
@@ -407,42 +453,154 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
             {/* Content - Multi-language with Rich Text Editor (8 languages) */}
             <div className="form-group">
-              <label className="form-label required">
-                {t('news.content')}
-              </label>
-
-              {/* Chinese Content (Primary) */}
-              <div className="space-y-2 mb-4">
-                <div className="text-xs text-gray-500">简体中文</div>
-                <TipTapEditor
-                  value={formData.content.zh || ''}
-                  onChange={(value) => setFormData({ ...formData, content: { ...formData.content, zh: value } })}
-                  placeholder={t('news.content')}
-                  minHeight="400px"
-                  onImageUpload={async (file) => {
-                    const url = await uploadImage(file);
-                    return url;
-                  }}
-                />
-                {errors.content_zh && <span className="error-text">{errors.content_zh}</span>}
+              <div className="flex items-center justify-between mb-3">
+                <label className="form-label required">
+                  {t('news.content')}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleTranslateContent}
+                  disabled={isTranslating || !formData.content.zh}
+                  className="btn btn-sm btn-outline flex items-center gap-2"
+                  title="将中文内容翻译到其他语言"
+                >
+                  {isTranslating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      翻译中...
+                    </>
+                  ) : (
+                    <>
+                      <Languages className="w-4 h-4" />
+                      一键翻译
+                    </>
+                  )}
+                </button>
               </div>
 
-              {/* Other Languages - Use MultiLangInput for text-based content */}
-              <MultiLangInput
-                label="其他语言内容"
-                values={Object.fromEntries(
-                  Object.entries(formData.content).filter(([lang]) => lang !== 'zh')
-                )}
-                onChange={(values) => setFormData({
-                  ...formData,
-                  content: { ...formData.content, ...values }
-                })}
-                type="textarea"
-                placeholder={t('news.content')}
-                requiredLangs={[]}
-                expandedByDefault={false}
-                rows={15}
-              />
+              {/* All Languages with Rich Text Editor */}
+              <div className="space-y-4">
+                {/* Chinese Content (Primary) */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">简体中文 *</div>
+                  <TipTapEditor
+                    value={formData.content.zh || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, zh: value } })}
+                    placeholder={t('news.content')}
+                    minHeight="400px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                  {errors.content_zh && <span className="error-text">{errors.content_zh}</span>}
+                </div>
+
+                {/* English */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">English</div>
+                  <TipTapEditor
+                    value={formData.content.en || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, en: value } })}
+                    placeholder="Content in English"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* Traditional Chinese */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">繁體中文</div>
+                  <TipTapEditor
+                    value={formData.content['zh-TW'] || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, 'zh-TW': value } })}
+                    placeholder="繁體中文內容"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* Japanese */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">日本語</div>
+                  <TipTapEditor
+                    value={formData.content.ja || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, ja: value } })}
+                    placeholder="日本語の内容"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* Spanish */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">Español</div>
+                  <TipTapEditor
+                    value={formData.content.es || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, es: value } })}
+                    placeholder="Contenido en español"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* French */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">Français</div>
+                  <TipTapEditor
+                    value={formData.content.fr || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, fr: value } })}
+                    placeholder="Contenu en français"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* Arabic */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">العربية</div>
+                  <TipTapEditor
+                    value={formData.content.ar || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, ar: value } })}
+                    placeholder="المحتوى بالعربية"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+
+                {/* Hindi */}
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-gray-700">हिन्दी</div>
+                  <TipTapEditor
+                    value={formData.content.hi || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, hi: value } })}
+                    placeholder="हिन्दी में सामग्री"
+                    minHeight="300px"
+                    onImageUpload={async (file) => {
+                      const url = await uploadImage(file);
+                      return url;
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </form>
         </div>
