@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { NEWS_CATEGORIES } from '../constants/newsCategories';
 import { ImageUploader } from './ImageUploader';
+import { TipTapEditor } from './TipTapEditor';
 import { articlesAPI, ArticleCreate, ContentBlock } from '../services/api';
 import { uploadImage } from '../services/uploadAPI';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -307,150 +308,359 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[100] flex items-start justify-center overflow-y-auto py-8">
-      <div className="bg-[#0a2540] rounded-2xl border border-white/10 w-full max-w-6xl mx-4 my-8">
+    <div className="news-create-form-overlay">
+      <div className="news-create-form-container">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-[#0a2540] z-10">
-          <h2 className="text-2xl font-light text-white">
-            {t('news.createArticle')}
-          </h2>
+        <div className="form-header">
+          <h2>{t('news.createArticle')}</h2>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="btn-close"
+            type="button"
           >
-            <X className="w-6 h-6" />
+            ×
           </button>
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-6">
-          {submitError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400">
-              {submitError}
+        <div className="form-content">
+          <form>
+            {submitError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 mb-4">
+                {submitError}
+              </div>
+            )}
+
+            {/* Category */}
+            <div className="form-group">
+              <label className="form-label required">
+                {t('news.category')}
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="form-select"
+              >
+                {NEWS_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+              {errors.category && <span className="error-text">{errors.category}</span>}
             </div>
-          )}
 
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t('news.category')} <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full bg-[#1a3a5a] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-            >
-              {NEWS_CATEGORIES.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-400 text-sm mt-1">{errors.category}</p>}
-          </div>
-
-          {/* Author */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t('news.author')} <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.author}
-              onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-              className="w-full bg-[#1a3a5a] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
-              placeholder={t('news.authorPlaceholder')}
-            />
-            {errors.author && <p className="text-red-400 text-sm mt-1">{errors.author}</p>}
-          </div>
-
-          {/* Image URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t('news.imageUrl')}
-            </label>
-            <ImageUploader
-              value={formData.image_url}
-              onChange={(url) => setFormData({ ...formData, image_url: url })}
-              onUpload={uploadImage}
-            />
-          </div>
-
-          {/* Title - Multi-language */}
-          <MultiLangInput
-            label={t('news.title')}
-            values={formData.title}
-            onChange={(values) => setFormData({ ...formData, title: values })}
-            required
-            error={errors.title_zh}
-            InputComponent={(props) => (
+            {/* Author */}
+            <div className="form-group">
+              <label className="form-label required">
+                {t('news.author')}
+              </label>
               <input
-                {...props}
                 type="text"
-                className="w-full bg-[#1a3a5a] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
+                value={formData.author}
+                onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                className="form-input"
+                placeholder={t('news.authorPlaceholder')}
               />
-            )}
-          />
+              {errors.author && <span className="error-text">{errors.author}</span>}
+            </div>
 
-          {/* Summary - Multi-language */}
-          <MultiLangInput
-            label={t('news.summary')}
-            values={formData.summary}
-            onChange={(values) => setFormData({ ...formData, summary: values })}
-            InputComponent={(props) => (
-              <textarea
-                {...props}
+            {/* Image URL */}
+            <div className="form-group">
+              <label className="form-label">
+                {t('news.imageUrl')}
+              </label>
+              <ImageUploader
+                currentImageUrl={formData.image_url}
+                onUploadSuccess={(url) => setFormData({ ...formData, image_url: url })}
+                onUploadError={(error) => setSubmitError(error)}
+              />
+            </div>
+
+            {/* Title - Multi-language (8 languages) */}
+            <div className="form-group">
+              <MultiLangInput
+                label={t('news.title')}
+                values={formData.title}
+                onChange={(values) => setFormData({ ...formData, title: values })}
+                type="text"
+                placeholder={t('news.title')}
+                requiredLangs={['zh']}
+                expandedByDefault={false}
+              />
+              {errors.title_zh && <span className="error-text">{errors.title_zh}</span>}
+            </div>
+
+            {/* Summary - Multi-language (8 languages) */}
+            <div className="form-group">
+              <MultiLangInput
+                label={t('news.summary')}
+                values={formData.summary}
+                onChange={(values) => setFormData({ ...formData, summary: values })}
+                type="textarea"
+                placeholder={t('news.summary')}
+                requiredLangs={['zh']}
+                expandedByDefault={false}
                 rows={3}
-                className="w-full bg-[#1a3a5a] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] resize-none"
               />
-            )}
-          />
+            </div>
 
-          {/* Content - Multi-language */}
-          <MultiLangInput
-            label={t('news.content')}
-            values={formData.content}
-            onChange={(values) => setFormData({ ...formData, content: values })}
-            required
-            error={errors.content_zh}
-            InputComponent={(props) => (
-              <textarea
-                {...props}
+            {/* Content - Multi-language with Rich Text Editor (8 languages) */}
+            <div className="form-group">
+              <label className="form-label required">
+                {t('news.content')}
+              </label>
+
+              {/* Chinese Content (Primary) */}
+              <div className="space-y-2 mb-4">
+                <div className="text-xs text-gray-500">简体中文</div>
+                <TipTapEditor
+                  value={formData.content.zh || ''}
+                  onChange={(value) => setFormData({ ...formData, content: { ...formData.content, zh: value } })}
+                  placeholder={t('news.content')}
+                  minHeight="400px"
+                  onImageUpload={async (file) => {
+                    const url = await uploadImage(file);
+                    return url;
+                  }}
+                />
+                {errors.content_zh && <span className="error-text">{errors.content_zh}</span>}
+              </div>
+
+              {/* Other Languages - Use MultiLangInput for text-based content */}
+              <MultiLangInput
+                label="其他语言内容"
+                values={Object.fromEntries(
+                  Object.entries(formData.content).filter(([lang]) => lang !== 'zh')
+                )}
+                onChange={(values) => setFormData({
+                  ...formData,
+                  content: { ...formData.content, ...values }
+                })}
+                type="textarea"
+                placeholder={t('news.content')}
+                requiredLangs={[]}
+                expandedByDefault={false}
                 rows={15}
-                className="w-full bg-[#1a3a5a] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] font-mono text-sm resize-none"
-                placeholder="支持 Markdown 格式：# 标题、**粗体**、- 列表、![图片](url) 等"
               />
-            )}
-          />
+            </div>
+          </form>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-4 p-6 border-t border-white/10 sticky bottom-0 bg-[#0a2540]">
+        <div className="form-footer">
           <button
+            type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-6 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+            className="btn btn-secondary"
           >
             {t('common.cancel')}
           </button>
           <button
+            type="button"
             onClick={() => handleSubmit('draft')}
             disabled={isSubmitting}
-            className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="btn btn-outline"
           >
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {t('news.saveAsDraft')}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                {t('news.saveAsDraft')}...
+              </>
+            ) : (
+              t('news.saveAsDraft')
+            )}
           </button>
           <button
+            type="button"
             onClick={() => handleSubmit('published')}
             disabled={isSubmitting}
-            className="px-6 py-2 bg-[#00a4e4] hover:bg-[#0090cc] text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="btn btn-primary"
           >
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {t('news.publish')}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                {t('news.publish')}...
+              </>
+            ) : (
+              t('news.publish')
+            )}
           </button>
         </div>
       </div>
+
+      {/* Styles */}
+      <style>{`
+        .news-create-form-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .news-create-form-container {
+          background: white;
+          border-radius: 12px;
+          width: 100%;
+          max-width: 900px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 24px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-header h2 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+          color: #111827;
+        }
+
+        .btn-close {
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: none;
+          font-size: 32px;
+          line-height: 1;
+          color: #6b7280;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .btn-close:hover {
+          color: #111827;
+        }
+
+        .form-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+        }
+
+        .form-group {
+          margin-bottom: 20px;
+        }
+
+        .form-label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          color: #374151;
+          font-size: 14px;
+        }
+
+        .form-label.required::after {
+          content: ' *';
+          color: #dc2626;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: all 0.2s;
+          color: #111827;
+          background-color: #ffffff;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+          color: #9ca3af;
+          opacity: 1;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+          outline: none;
+          border-color: #00a4e4;
+          box-shadow: 0 0 0 3px rgba(0, 164, 228, 0.1);
+        }
+
+        .error-text {
+          display: block;
+          margin-top: 4px;
+          font-size: 12px;
+          color: #dc2626;
+        }
+
+        .form-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 16px 24px;
+          border-top: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .btn-primary {
+          background-color: #00a4e4;
+          color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          background-color: #0090cc;
+        }
+
+        .btn-outline {
+          background-color: white;
+          color: #374151;
+          border: 1px solid #d1d5db;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+          background-color: #f9fafb;
+          border-color: #9ca3af;
+        }
+
+        .btn-secondary {
+          background-color: transparent;
+          color: #6b7280;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+          color: #374151;
+        }
+      `}</style>
     </div>
   );
 };

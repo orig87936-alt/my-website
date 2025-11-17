@@ -115,34 +115,37 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
               </select>
             </div>
 
-            {/* Read Time (Multi-Language) */}
+            {/* Read Time (Multi-Language) - 8 languages */}
             <MultiLangInput
               label={language.startsWith('zh') ? '阅读时间' : 'Read Time'}
               values={formData.readTime}
               onChange={(values) => setFormData({ ...formData, readTime: values })}
               type="text"
               placeholder="2分钟阅读 / 2 min read"
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh']}
+              expandedByDefault={false}
             />
 
-            {/* Title (Multi-Language) */}
+            {/* Title (Multi-Language) - 8 languages */}
             <MultiLangInput
               label={language.startsWith('zh') ? '标题' : 'Title'}
               values={formData.title}
               onChange={(values) => setFormData({ ...formData, title: values })}
               type="text"
               placeholder={language.startsWith('zh') ? '输入新闻标题' : 'Enter news title'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh']}
+              expandedByDefault={false}
             />
 
-            {/* Summary (Multi-Language) */}
+            {/* Summary (Multi-Language) - 8 languages */}
             <MultiLangInput
               label={language.startsWith('zh') ? '摘要' : 'Summary'}
               values={formData.summary}
               onChange={(values) => setFormData({ ...formData, summary: values })}
               type="textarea"
               placeholder={language.startsWith('zh') ? '输入新闻摘要' : 'Enter news summary'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh']}
+              expandedByDefault={false}
               rows={4}
             />
           </div>
