@@ -19,6 +19,17 @@ interface UploadState {
   result?: any;
 }
 
+// T025: 支持的语言列表
+const SUPPORTED_LANGUAGES = [
+  { code: 'zh-tw', name: '繁体中文', nativeName: '繁體中文' },
+  { code: 'en', name: '英语', nativeName: 'English' },
+  { code: 'ja', name: '日语', nativeName: '日本語' },
+  { code: 'es', name: '西班牙语', nativeName: 'Español' },
+  { code: 'fr', name: '法语', nativeName: 'Français' },
+  { code: 'ar', name: '阿拉伯语', nativeName: 'العربية' },
+  { code: 'hi', name: '印地语', nativeName: 'हिन्दी' },
+];
+
 const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
   isOpen,
   onClose,
@@ -30,6 +41,7 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
   });
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['en']); // T025: 默认选择英语
 
   // 阻止背景滚动
   useEffect(() => {
@@ -81,6 +93,25 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     multiple: false,
   });
 
+  // T026: 语言选择处理函数
+  const handleLanguageToggle = (langCode: string) => {
+    setSelectedLanguages(prev => {
+      if (prev.includes(langCode)) {
+        return prev.filter(code => code !== langCode);
+      } else {
+        return [...prev, langCode];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedLanguages(SUPPORTED_LANGUAGES.map(lang => lang.code));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedLanguages([]);
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) return;
 
@@ -95,9 +126,10 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
         }));
       }, 200);
 
+      // T027: 使用选中的语言列表
       const result = await uploadDocument(selectedFile, {
         auto_translate: autoTranslate,
-        target_lang: 'en',
+        target_langs: selectedLanguages,
       });
 
       clearInterval(progressInterval);
@@ -220,17 +252,73 @@ const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                 </div>
 
                 {/* Options */}
-                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="autoTranslate"
-                    checked={autoTranslate}
-                    onChange={(e) => setAutoTranslate(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#00a4e4] focus:ring-[#00a4e4]"
-                  />
-                  <label htmlFor="autoTranslate" className="text-sm text-gray-300 cursor-pointer">
-                    自动翻译内容到英文
-                  </label>
+                <div className="space-y-4">
+                  {/* Auto Translate Checkbox */}
+                  <div className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="autoTranslate"
+                      checked={autoTranslate}
+                      onChange={(e) => setAutoTranslate(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#00a4e4] focus:ring-[#00a4e4]"
+                    />
+                    <label htmlFor="autoTranslate" className="text-sm text-gray-300 cursor-pointer">
+                      自动翻译内容到多种语言
+                    </label>
+                  </div>
+
+                  {/* T025-T026: Language Selection */}
+                  {autoTranslate && (
+                    <div className="p-4 bg-white/5 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-300">
+                          选择目标语言 ({selectedLanguages.length}/7)
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleSelectAll}
+                            className="text-xs px-2 py-1 bg-[#00a4e4]/20 hover:bg-[#00a4e4]/30 text-[#00a4e4] rounded transition-colors"
+                          >
+                            全选
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDeselectAll}
+                            className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 text-gray-300 rounded transition-colors"
+                          >
+                            清空
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <label
+                            key={lang.code}
+                            className={`
+                              flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors
+                              ${selectedLanguages.includes(lang.code)
+                                ? 'bg-[#00a4e4]/20 border border-[#00a4e4]/50'
+                                : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                              }
+                            `}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedLanguages.includes(lang.code)}
+                              onChange={() => handleLanguageToggle(lang.code)}
+                              className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#00a4e4] focus:ring-[#00a4e4]"
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm text-white">{lang.nativeName}</div>
+                              <div className="text-xs text-gray-400">{lang.name}</div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Upload Progress */}

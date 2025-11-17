@@ -1131,9 +1131,15 @@ export async function uploadDocument(
   if (options.auto_translate !== undefined) {
     formData.append('auto_translate', String(options.auto_translate));
   }
-  if (options.target_lang) {
-    formData.append('target_lang', options.target_lang);
+
+  // T027: Support multiple target languages
+  if (options.target_langs && options.target_langs.length > 0) {
+    formData.append('target_langs', options.target_langs.join(','));
+  } else if (options.target_lang) {
+    // Backward compatibility
+    formData.append('target_langs', options.target_lang);
   }
+
   if (options.category) {
     formData.append('category', options.category);
   }

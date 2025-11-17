@@ -13,7 +13,10 @@ class UploadDocumentRequest(BaseModel):
     """Request schema for document upload (multipart form data)"""
     category: Optional[str] = Field(None, description="Article category")
     auto_translate: bool = Field(default=False, description="Whether to auto-translate after parsing")
-    target_lang: str = Field(default="en", pattern="^(zh|en)$", description="Target language for translation")
+    target_langs: List[str] = Field(
+        default_factory=lambda: ["en"],
+        description="Target languages for translation (zh, zh-tw, en, ja, es, fr, ar, hi)"
+    )
 
 
 # Uploaded image info
@@ -36,17 +39,20 @@ class ParseMetadata(BaseModel):
 
 # Parse result
 class ParseResult(BaseModel):
-    """Schema for document parse result"""
+    """Schema for document parse result with multi-language support"""
     title: str = Field(..., description="Extracted or generated title (Chinese)")
-    title_en: Optional[str] = Field(None, description="Translated title (English, if auto_translate=true)")
     summary: str = Field(..., description="Auto-generated summary (50-80 chars, Chinese)")
-    summary_en: Optional[str] = Field(None, description="Translated summary (English, if auto_translate=true)")
     category: str = Field(..., description="Suggested or provided category")
     tags: List[str] = Field(default_factory=list, description="Auto-extracted tags")
     content_zh: List[ContentBlock] = Field(..., description="Parsed content in Chinese")
-    content_en: Optional[List[ContentBlock]] = Field(None, description="Translated content in English (if auto_translate=true)")
     images_uploaded: List[UploadedImage] = Field(default_factory=list, description="Uploaded images")
     metadata: ParseMetadata = Field(..., description="Parse metadata")
+
+    # Multi-language translations (T021-T023)
+    translations: Optional[Dict[str, Dict[str, Any]]] = Field(
+        None,
+        description="Translations for each target language. Format: {lang: {title: str, summary: str, content: List[ContentBlock]}}"
+    )
 
 
 # Document upload response schemas
@@ -107,6 +113,9 @@ class DocumentParseOptions(BaseModel):
     extract_images: bool = Field(default=True, description="Whether to extract and upload images")
     generate_metadata: bool = Field(default=True, description="Whether to generate metadata (summary, tags)")
     auto_translate: bool = Field(default=False, description="Whether to auto-translate")
-    target_lang: str = Field(default="en", description="Target language for translation")
+    target_langs: List[str] = Field(
+        default_factory=lambda: ["en"],
+        description="Target languages for translation"
+    )
     category: Optional[str] = Field(None, description="Article category")
 

@@ -49,8 +49,8 @@ ALLOWED_EXTENSIONS = {".md", ".docx"}
 async def upload_document(
     file: UploadFile = File(..., description="Document file (.md or .docx, max 10MB)"),
     category: Optional[str] = Form(None, description="Article category (optional)"),
-    auto_translate: bool = Form(False, description="Auto-translate content to target language"),
-    target_lang: str = Form("en", description="Target language for translation (zh/en)"),
+    auto_translate: bool = Form(False, description="Auto-translate content to target languages"),
+    target_langs: str = Form("en", description="Comma-separated target languages (zh-tw,en,ja,es,fr,ar,hi)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -62,7 +62,7 @@ async def upload_document(
     - **Document Parsing**: Supports .md and .docx files (T035-T040)
     - **Image Extraction**: Automatically extracts and uploads images (max 5 concurrent) (T039)
     - **AI Metadata Generation**: Auto-generates summary, category, and tags (T041-T044)
-    - **Auto Translation**: Optional translation to target language (T049)
+    - **Multi-Language Translation**: Optional translation to multiple languages (T021-T023)
     - **Security**: Content sanitization and XSS protection (T073)
     - **Performance**: File size validation and streaming (T072)
 
@@ -71,14 +71,14 @@ async def upload_document(
     2. Parse content and extract images
     3. Upload images concurrently (max 5 at a time)
     4. Generate AI metadata (summary, category, tags)
-    5. Optionally translate content
+    5. Optionally translate content to multiple languages concurrently
     6. Return structured content blocks ready for article creation
 
     **Parameters:**
     - **file**: Document file (.md or .docx, max 10MB)
     - **category**: Article category (optional, will be AI-suggested if not provided)
     - **auto_translate**: Enable automatic translation (default: false)
-    - **target_lang**: Target language for translation (zh/en, default: en)
+    - **target_langs**: Comma-separated target languages (zh-tw,en,ja,es,fr,ar,hi, default: en)
 
     **File Size Limit:** 10MB
 
@@ -94,7 +94,8 @@ async def upload_document(
     - **upload_status**: Upload status (success/failed)
     - **parse_result**: Parsed content including:
       - **title**: Extracted document title
-      - **content_blocks**: Structured content blocks
+      - **content_zh**: Chinese content blocks
+      - **translations**: Translations for each target language
       - **images**: Uploaded images with URLs
       - **metadata**: AI-generated summary, category, and tags
     - **uploaded_at**: Upload timestamp
@@ -172,68 +173,82 @@ async def upload_document(
         final_category = category or ai_metadata.get('category', 'headline')
         final_tags = ai_metadata.get('tags', [])
         
-        # 4. 翻译（如果需要）
-        content_en = None
-        title_en = None
-        summary_en = None
+        # 4. 多语言翻译（如果需要）(T021-T023)
+        translations = None
         translation_time = None
 
         if auto_translate:
             translation_start = time.time()
             translation_service = TranslationService(db)
 
-            # 翻译标题和摘要
-            try:
-                title_result = await translation_service.translate_text(
-                    text=final_title,
-                    source_lang='zh',
-                    target_lang=target_lang
-                )
-                title_en = title_result['translated_text']
-            except Exception as e:
-                print(f"⚠️ Title translation failed: {e}")
-                title_en = final_title
+            # 解析目标语言列表
+            target_langs_list = [lang.strip() for lang in target_langs.split(',') if lang.strip()]
 
-            try:
-                summary_result = await translation_service.translate_text(
-                    text=final_summary,
-                    source_lang='zh',
-                    target_lang=target_lang
-                )
-                summary_en = summary_result['translated_text']
-            except Exception as e:
-                print(f"⚠️ Summary translation failed: {e}")
-                summary_en = final_summary
+            # 过滤掉源语言（zh）
+            target_langs_list = [lang for lang in target_langs_list if lang != 'zh']
 
-            # 翻译所有文本块
-            translated_blocks = []
-            for i, block in enumerate(content_blocks):
-                if block.type in ['paragraph', 'heading', 'quote', 'list'] and block.content:
+            if target_langs_list:
+                translations = {}
+
+                # 为每种目标语言翻译
+                for target_lang in target_langs_list:
                     try:
-                        translation_result = await translation_service.translate_text(
-                            text=block.content,
+                        # 翻译标题
+                        title_result = await translation_service.translate_text(
+                            text=final_title,
                             source_lang='zh',
                             target_lang=target_lang
                         )
-                        # 提取翻译后的文本
-                        translated_text = translation_result['translated_text']
+                        translated_title = title_result['translated_text']
 
-                        translated_blocks.append(ContentBlock(
-                            type=block.type,
-                            content=translated_text,
-                            level=block.level,
-                            language=block.language,
-                            caption=block.caption
-                        ))
+                        # 翻译摘要
+                        summary_result = await translation_service.translate_text(
+                            text=final_summary,
+                            source_lang='zh',
+                            target_lang=target_lang
+                        )
+                        translated_summary = summary_result['translated_text']
+
+                        # 翻译所有文本块
+                        translated_blocks = []
+                        for i, block in enumerate(content_blocks):
+                            if block.type in ['paragraph', 'heading', 'quote', 'list'] and block.content:
+                                try:
+                                    translation_result = await translation_service.translate_text(
+                                        text=block.content,
+                                        source_lang='zh',
+                                        target_lang=target_lang
+                                    )
+                                    translated_text = translation_result['translated_text']
+
+                                    translated_blocks.append(ContentBlock(
+                                        type=block.type,
+                                        content=translated_text,
+                                        level=block.level,
+                                        language=block.language,
+                                        caption=block.caption
+                                    ))
+                                except Exception as e:
+                                    print(f"⚠️ Translation failed for block {i+1} in {target_lang}: {e}")
+                                    translated_blocks.append(block)
+                            else:
+                                # 非文本块（如图片、代码）直接复制
+                                translated_blocks.append(block)
+
+                        # 存储该语言的翻译结果
+                        translations[target_lang] = {
+                            'title': translated_title,
+                            'summary': translated_summary,
+                            'content': [block.model_dump() for block in translated_blocks]
+                        }
+
+                        print(f"✅ Translation completed for {target_lang}")
+
                     except Exception as e:
-                        # 翻译失败时保留原文
-                        print(f"⚠️ Translation failed for block {i+1}: {e}")
-                        translated_blocks.append(block)
-                else:
-                    # 非文本块（如图片、代码）直接复制
-                    translated_blocks.append(block)
+                        print(f"⚠️ Translation failed for {target_lang}: {e}")
+                        # 继续翻译其他语言
+                        continue
 
-            content_en = translated_blocks
             translation_time = time.time() - translation_start
         
         # 5. 构建解析结果
@@ -244,16 +259,13 @@ async def upload_document(
             parse_time=metadata.get('parse_time', 0),
             translation_time=translation_time
         )
-        
+
         parse_result_schema = ParseResult(
             title=final_title,
-            title_en=title_en,
             summary=final_summary,
-            summary_en=summary_en,
             category=final_category,
             tags=final_tags,
             content_zh=content_blocks,
-            content_en=content_en,
             images_uploaded=[
                 UploadedImage(
                     original_name=img['original_name'],
@@ -261,7 +273,8 @@ async def upload_document(
                     size=img['size']
                 ) for img in uploaded_images if 'error' not in img
             ],
-            metadata=parse_metadata
+            metadata=parse_metadata,
+            translations=translations  # T023: 添加多语言翻译结果
         )
         
         # 6. 更新上传记录
