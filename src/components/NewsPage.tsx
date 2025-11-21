@@ -523,7 +523,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                     }
                     // 否则使用内部导航
                     else {
-                      onNavigateToArticle(article.link.replace('/', ''));
+                      onNavigateToArticle(article.link.replace('/news/', ''));
                     }
                   }}
                 >
