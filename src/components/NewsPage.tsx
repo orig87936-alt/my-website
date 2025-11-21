@@ -11,6 +11,7 @@ import { TranslateButton } from './TranslateButton';
 import { EditFocusPointModalV2 } from './EditFocusPointModalV2';
 import { EditFeaturedModalV2 } from './EditFeaturedModalV2';
 import { AddNewsModalV2 } from './AddNewsModalV2';
+import { articlesAPI } from '../services/api';
 
 interface NewsPageProps {
   onNavigateToArticle: (articleId: string) => void;
@@ -37,14 +38,152 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
   const [isFeaturedModalOpen, setIsFeaturedModalOpen] = useState(false);
   const [editingFeatured, setEditingFeatured] = useState<FeaturedArticle | null>(null);
 
-  // Load news from localStorage or use initial data
+  // Helper function to get category name in different languages
+  const getCategoryName = (category: string, lang: string): string => {
+    const categoryNames: Record<string, Record<string, string>> = {
+      'headline': {
+        'zh-CN': '头条新闻',
+        'zh-TW': '頭條新聞',
+        'en': 'Headlines',
+        'ja': 'ヘッドライン',
+        'es': 'Titulares',
+        'fr': 'Gros titres',
+        'ar': 'عناوين',
+        'hi': 'शीर्षक'
+      },
+      'regulatory': {
+        'zh-CN': '监管动态',
+        'zh-TW': '監管動態',
+        'en': 'Regulatory',
+        'ja': '規制',
+        'es': 'Regulatorio',
+        'fr': 'Réglementaire',
+        'ar': 'تنظيمي',
+        'hi': 'नियामक'
+      },
+      'analysis': {
+        'zh-CN': '深度分析',
+        'zh-TW': '深度分析',
+        'en': 'Analysis',
+        'ja': '分析',
+        'es': 'Análisis',
+        'fr': 'Analyse',
+        'ar': 'تحليل',
+        'hi': 'विश्लेषण'
+      },
+      'business': {
+        'zh-CN': '商业资讯',
+        'zh-TW': '商業資訊',
+        'en': 'Business',
+        'ja': 'ビジネス',
+        'es': 'Negocios',
+        'fr': 'Affaires',
+        'ar': 'أعمال',
+        'hi': 'व्यापार'
+      },
+      'enterprise': {
+        'zh-CN': '企业动态',
+        'zh-TW': '企業動態',
+        'en': 'Enterprise',
+        'ja': '企業',
+        'es': 'Empresa',
+        'fr': 'Entreprise',
+        'ar': 'مؤسسة',
+        'hi': 'उद्यम'
+      },
+      'outlook': {
+        'zh-CN': '市场展望',
+        'zh-TW': '市場展望',
+        'en': 'Outlook',
+        'ja': '見通し',
+        'es': 'Perspectiva',
+        'fr': 'Perspectives',
+        'ar': 'توقعات',
+        'hi': 'दृष्टिकोण'
+      }
+    };
+
+    return categoryNames[category]?.[lang] || category;
+  };
+
+  // Load news from API and localStorage
   useEffect(() => {
     console.log('📰 Loading news data...');
-    console.log('Initial data counts:', {
-      liveNews: initialLiveNewsList.length,
-      featured: initialFeaturedArticles.length
-    });
 
+    // Load featured articles from API
+    const loadFeaturedArticles = async () => {
+      try {
+        console.log('🔄 Fetching featured articles from API...');
+        const apiArticles = await articlesAPI.getFeatured();
+        console.log('✅ Fetched featured articles from API:', apiArticles.length, 'items');
+
+        // Save ID mappings to localStorage (UUID -> UUID, for consistency)
+        const idMapping = JSON.parse(localStorage.getItem('article_id_mapping') || '{}');
+        apiArticles.forEach(article => {
+          idMapping[article.id] = article.id;
+        });
+        localStorage.setItem('article_id_mapping', JSON.stringify(idMapping));
+        console.log('💾 Saved ID mappings for', apiArticles.length, 'articles');
+
+        // Convert API articles to FeaturedArticle format
+        const convertedArticles: FeaturedArticle[] = apiArticles.map(article => ({
+          id: article.id,
+          image: article.image_url || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800',
+          category: {
+            'zh-CN': getCategoryName(article.category, 'zh-CN'),
+            'zh-TW': getCategoryName(article.category, 'zh-TW'),
+            'en': getCategoryName(article.category, 'en'),
+            'ja': getCategoryName(article.category, 'ja'),
+            'es': getCategoryName(article.category, 'es'),
+            'fr': getCategoryName(article.category, 'fr'),
+            'ar': getCategoryName(article.category, 'ar'),
+            'hi': getCategoryName(article.category, 'hi')
+          },
+          date: {
+            'zh-CN': new Date(article.published_at).toLocaleDateString('zh-CN'),
+            'zh-TW': new Date(article.published_at).toLocaleDateString('zh-TW'),
+            'en': new Date(article.published_at).toLocaleDateString('en-US'),
+            'ja': new Date(article.published_at).toLocaleDateString('ja-JP'),
+            'es': new Date(article.published_at).toLocaleDateString('es-ES'),
+            'fr': new Date(article.published_at).toLocaleDateString('fr-FR'),
+            'ar': new Date(article.published_at).toLocaleDateString('ar-SA'),
+            'hi': new Date(article.published_at).toLocaleDateString('hi-IN')
+          },
+          title: {
+            'zh-CN': article.title_zh || '',
+            'zh-TW': article.title_zh_tw || article.title_zh || '',
+            'en': article.title_en || article.title_zh || '',
+            'ja': article.title_ja || article.title_en || article.title_zh || '',
+            'es': article.title_es || article.title_en || article.title_zh || '',
+            'fr': article.title_fr || article.title_en || article.title_zh || '',
+            'ar': article.title_ar || article.title_en || article.title_zh || '',
+            'hi': article.title_hi || article.title_en || article.title_zh || ''
+          },
+          description: {
+            'zh-CN': article.summary_zh || '',
+            'zh-TW': article.summary_zh_tw || article.summary_zh || '',
+            'en': article.summary_en || article.summary_zh || '',
+            'ja': article.summary_ja || article.summary_en || article.summary_zh || '',
+            'es': article.summary_es || article.summary_en || article.summary_zh || '',
+            'fr': article.summary_fr || article.summary_en || article.summary_zh || '',
+            'ar': article.summary_ar || article.summary_en || article.summary_zh || '',
+            'hi': article.summary_hi || article.summary_en || article.summary_zh || ''
+          },
+          link: `/news/${article.id}`
+        }));
+
+        setFeaturedArticles(convertedArticles);
+        console.log('✅ Converted and set featured articles:', convertedArticles.length, 'items');
+      } catch (error) {
+        console.error('❌ Failed to fetch featured articles from API:', error);
+        console.log('⚠️ Using initial data as fallback');
+        setFeaturedArticles(initialFeaturedArticles);
+      }
+    };
+
+    loadFeaturedArticles();
+
+    // Load live news from localStorage
     const savedNews = localStorage.getItem('liveNewsList');
     if (savedNews) {
       try {
@@ -76,7 +215,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
       setLiveNewsList(initialLiveNewsList);
     }
 
-    // Load focus point news
+    // Load focus point news from localStorage
     const savedFocusPoint = localStorage.getItem('focusPointNews');
     if (savedFocusPoint) {
       try {
@@ -101,39 +240,6 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
       console.log('⚠️ No saved focus point, using initial data');
       setFocusPointNews(initialFocusPointNews);
     }
-
-    // Load featured articles
-    const savedFeatured = localStorage.getItem('featuredArticles');
-    if (savedFeatured) {
-      try {
-        const parsed = JSON.parse(savedFeatured);
-        // Validate that the data has the correct structure
-        const isValid = parsed && Array.isArray(parsed) && parsed.length > 0 &&
-          parsed.every((article: any) =>
-            article.category && typeof article.category === 'object' &&
-            article.date && typeof article.date === 'object' &&
-            article.title && typeof article.title === 'object' &&
-            article.description && typeof article.description === 'object' &&
-            article.category['zh-CN'] && article.category['zh-TW'] && article.category['en']
-          );
-
-        if (isValid) {
-          console.log('✅ Loaded featuredArticles from localStorage:', parsed.length, 'items');
-          setFeaturedArticles(parsed);
-        } else {
-          console.warn('⚠️ Saved featured articles have invalid structure, using initial data');
-          localStorage.removeItem('featuredArticles');
-          setFeaturedArticles(initialFeaturedArticles);
-        }
-      } catch (error) {
-        console.error('❌ Failed to parse saved featured articles:', error);
-        localStorage.removeItem('featuredArticles');
-        setFeaturedArticles(initialFeaturedArticles);
-      }
-    } else {
-      console.log('⚠️ No saved featured articles, using initial data:', initialFeaturedArticles.length, 'items');
-      setFeaturedArticles(initialFeaturedArticles);
-    }
   }, []);
 
   // Save news to localStorage whenever it changes
@@ -143,16 +249,30 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
   };
 
   // Helper function to get translated content with fallback
-  // 支持中文简体、中文繁体和英文，其他语言显示英文
-  const getMultiLangContent = (content: { 'zh-CN': string; 'zh-TW': string; 'en': string } | undefined) => {
+  // 支持8种语言，如果当前语言不存在则回退到英文，再回退到中文
+  const getMultiLangContent = (content: any) => {
     if (!content) {
       console.error('getMultiLangContent received undefined content');
       return '';
     }
-    if (language === 'zh-CN') return content['zh-CN'] || '';
-    if (language === 'zh-TW') return content['zh-TW'] || '';
-    // For all other languages (en, ja, es, fr, ar, hi), return English as fallback
-    return content['en'] || '';
+
+    // 尝试获取当前语言的内容
+    if (content[language]) {
+      return content[language];
+    }
+
+    // 回退顺序：当前语言 -> 英文 -> 简体中文 -> 繁体中文 -> 第一个可用的值
+    const fallbackOrder = [language, 'en', 'zh-CN', 'zh-TW', 'ja', 'es', 'fr', 'ar', 'hi'];
+
+    for (const lang of fallbackOrder) {
+      if (content[lang]) {
+        return content[lang];
+      }
+    }
+
+    // 如果都没有，返回第一个可用的值
+    const firstAvailable = Object.values(content).find(v => v);
+    return firstAvailable || '';
   };
 
   // Delete news item
@@ -286,12 +406,9 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
             {/* Header */}
             <div className="p-8 border-b border-white/10">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-[#00a4e4] uppercase tracking-wider mb-2">
-                    {t('news.featured.title')}
-                  </div>
-                  <p className="text-gray-400 text-sm">{focusPoint.date}</p>
-                </div>
+                <h2 className="text-4xl font-light text-white">
+                  {t('news.featured.title')}
+                </h2>
                 {isAdmin() && (
                   <button
                     onClick={() => setIsFocusEditModalOpen(true)}
@@ -329,9 +446,12 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                   transition={{ delay: 0.2 }}
                   className="space-y-4"
                 >
-                  <h2 className="text-2xl font-light text-white leading-tight">
-                    {focusPoint.title}
-                  </h2>
+                  <div>
+                    <h2 className="text-2xl font-light text-white leading-tight mb-2">
+                      {focusPoint.title}
+                    </h2>
+                    <p className="text-gray-400 text-sm">{focusPoint.date}</p>
+                  </div>
 
                   {/* Summary - Always visible */}
                   <p className="text-gray-300 leading-relaxed">
@@ -494,9 +614,15 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                           transition={{ delay: (index % 4) * 0.05 }}
                           className="group flex items-center gap-6 p-6 glass rounded-xl hover:bg-white/5 transition-all cursor-pointer"
                           onClick={() => {
-                            setSelectedNews(news);
-                            setClickedIndex(index);
-                            setIsModalOpen(true);
+                            // Toggle the expanded state
+                            if (isModalOpen && clickedIndex === index) {
+                              setIsModalOpen(false);
+                              setClickedIndex(null);
+                            } else {
+                              setSelectedNews(news);
+                              setClickedIndex(index);
+                              setIsModalOpen(true);
+                            }
                           }}
                         >
                           <div className="flex items-center gap-4 text-gray-400 min-w-[240px]">
@@ -508,7 +634,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                             <span className="text-sm text-gray-500">{news.readTime}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-lg text-white group-hover:text-[#00a4e4] transition-colors">
+                            <p className="text-lg text-white group-hover:text-[#00a4e4] transition-colors line-clamp-1">
                               {news.title}
                             </p>
                           </div>
@@ -526,7 +652,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                             </div>
                           )}
 
-                          <ArrowRight className="w-5 h-5 text-[#00a4e4] opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ArrowRight className={`w-5 h-5 text-[#00a4e4] transition-all ${isModalOpen && clickedIndex === index ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
                         </motion.div>
 
                       {/* Inline Expanded Content */}
