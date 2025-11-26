@@ -38,12 +38,12 @@ export function EditFeaturedModalV2({ article, onSave, onClose, language }: Edit
       return;
     }
 
-    if (!formData.title['zh'] || !formData.title['en']) {
+    if (!formData.title['zh-CN'] || !formData.title['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文标题' : 'Please fill in Chinese and English titles');
       return;
     }
 
-    if (!formData.description['zh'] || !formData.description['en']) {
+    if (!formData.description['zh-CN'] || !formData.description['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文描述' : 'Please fill in Chinese and English descriptions');
       return;
     }
@@ -123,7 +123,9 @@ export function EditFeaturedModalV2({ article, onSave, onClose, language }: Edit
               onChange={(values) => setFormData({ ...formData, category: values })}
               type="text"
               placeholder="HEADLINE / 头条新闻"
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Date (Multi-Language) */}
@@ -133,7 +135,9 @@ export function EditFeaturedModalV2({ article, onSave, onClose, language }: Edit
               onChange={(values) => setFormData({ ...formData, date: values })}
               type="text"
               placeholder="2025年5月11日 / May 11, 2025"
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Title (Multi-Language) */}
@@ -143,7 +147,9 @@ export function EditFeaturedModalV2({ article, onSave, onClose, language }: Edit
               onChange={(values) => setFormData({ ...formData, title: values })}
               type="text"
               placeholder={language.startsWith('zh') ? '输入文章标题' : 'Enter article title'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Description (Multi-Language) */}
@@ -153,8 +159,10 @@ export function EditFeaturedModalV2({ article, onSave, onClose, language }: Edit
               onChange={(values) => setFormData({ ...formData, description: values })}
               type="textarea"
               placeholder={language.startsWith('zh') ? '输入文章描述' : 'Enter article description'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
               rows={4}
+              theme="dark"
             />
           </div>
 

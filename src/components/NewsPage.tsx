@@ -12,6 +12,7 @@ import { EditFocusPointModalV2 } from './EditFocusPointModalV2';
 import { EditFeaturedModalV2 } from './EditFeaturedModalV2';
 import { AddNewsModalV2 } from './AddNewsModalV2';
 import { articlesAPI } from '../services/api';
+import { NEWS_CATEGORIES, getCategoryLabel } from '../constants/newsCategories';
 
 interface NewsPageProps {
   onNavigateToArticle: (articleId: string) => void;
@@ -365,11 +366,13 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
     link: article.link
   }));
 
+  // 使用统一的分类定义
   const categories = [
     { id: 'all', label: t('news.category.all') },
-    { id: 'business', label: t('news.category.business') },
-    { id: 'technology', label: t('news.category.technology') },
-    { id: 'finance', label: t('news.category.finance') },
+    ...NEWS_CATEGORIES.map(cat => ({
+      id: cat.value,
+      label: getCategoryLabel(cat.value, language)
+    }))
   ];
 
   return (
@@ -406,7 +409,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
             {/* Header */}
             <div className="p-8 border-b border-white/10">
               <div className="flex items-center justify-between">
-                <h2 className="text-4xl font-light text-white">
+                <h2 className="text-4xl font-light" style={{ color: '#ef4444' }}>
                   {t('news.featured.title')}
                 </h2>
                 {isAdmin() && (
@@ -523,7 +526,15 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                     }
                     // 否则使用内部导航
                     else {
-                      onNavigateToArticle(article.link.replace('/news/', ''));
+                      // 移除 /news/ 或 news/ 前缀（如果存在）
+                      let articleId = article.link;
+                      if (articleId.startsWith('/news/')) {
+                        articleId = articleId.substring(6); // 移除 '/news/'
+                      } else if (articleId.startsWith('news/')) {
+                        articleId = articleId.substring(5); // 移除 'news/'
+                      }
+                      console.log('🔍 NewsPage: Navigating to article:', { originalLink: article.link, extractedId: articleId });
+                      onNavigateToArticle(articleId);
                     }
                   }}
                 >
@@ -581,7 +592,7 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                 className="glass px-6 py-3 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4] cursor-pointer"
               >
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id} className="bg-[#0a2540]">
+                  <option key={cat.id} value={cat.id} className="bg-[#0a2540] text-white">
                     {cat.label}
                   </option>
                 ))}
@@ -694,20 +705,8 @@ export function NewsPage({ onNavigateToArticle }: NewsPageProps) {
                               </p>
 
                               {/* Meta Info */}
-                              <div className="pt-4 border-t border-gray-800 flex items-center justify-between text-sm text-gray-500">
+                              <div className="pt-4 border-t border-gray-800 text-sm text-gray-500">
                                 <span>{selectedNews.readTime}</span>
-                                <div className="flex gap-4">
-                                  <button className="hover:text-white transition-colors">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                  </button>
-                                  <button className="hover:text-white transition-colors">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                    </svg>
-                                  </button>
-                                </div>
                               </div>
                             </div>
                           </div>
@@ -859,10 +858,11 @@ function AddNewsModal({ news, onSave, onClose, language }: AddNewsModalProps) {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
                   className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
                 >
-                  <option value="business">Business</option>
-                  <option value="technology">Technology</option>
-                  <option value="finance">Finance</option>
-                  <option value="research">Research</option>
+                  {NEWS_CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value} className="bg-[#0a2540] text-white">
+                      {language.startsWith('zh') ? cat.labelZh : cat.labelEn}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

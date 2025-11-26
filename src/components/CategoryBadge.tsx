@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { getCategoryByValue } from '../constants/newsCategories';
+import { getCategoryByValue, getCategoryLabel } from '../constants/newsCategories';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface CategoryBadgeProps {
@@ -31,7 +31,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
     if (showBilingual) {
       return `${config.labelEn} / ${config.labelZh}`;
     }
-    return language === 'zh' ? config.labelZh : config.labelEn;
+    return getCategoryLabel(category, language);
   };
 
   return (

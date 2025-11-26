@@ -20,23 +20,66 @@ class ArticleService:
     async def create_article(db: AsyncSession, article_data: ArticleCreate) -> Article:
         """Create a new article"""
         # Convert Pydantic models to dict for JSONB storage
-        content_zh_dict = [block.model_dump() for block in article_data.content_zh]
-        content_en_dict = [block.model_dump() for block in article_data.content_en]
+        # Use exclude_none=False to preserve all fields, even if None
+        content_zh_dict = [block.model_dump(exclude_none=False) for block in article_data.content_zh]
+        content_en_dict = [block.model_dump(exclude_none=False) for block in article_data.content_en] if article_data.content_en else []
+        content_zh_tw_dict = [block.model_dump(exclude_none=False) for block in article_data.content_zh_tw] if article_data.content_zh_tw else []
+        content_ja_dict = [block.model_dump(exclude_none=False) for block in article_data.content_ja] if article_data.content_ja else []
+        content_es_dict = [block.model_dump(exclude_none=False) for block in article_data.content_es] if article_data.content_es else []
+        content_fr_dict = [block.model_dump(exclude_none=False) for block in article_data.content_fr] if article_data.content_fr else []
+        content_ar_dict = [block.model_dump(exclude_none=False) for block in article_data.content_ar] if article_data.content_ar else []
+        content_hi_dict = [block.model_dump(exclude_none=False) for block in article_data.content_hi] if article_data.content_hi else []
         
         article = Article(
             category=article_data.category,
             status=article_data.status,
+            # Titles (8 languages)
             title_zh=article_data.title_zh,
+            title_zh_tw=article_data.title_zh_tw,
             title_en=article_data.title_en,
+            title_ja=article_data.title_ja,
+            title_es=article_data.title_es,
+            title_fr=article_data.title_fr,
+            title_ar=article_data.title_ar,
+            title_hi=article_data.title_hi,
+            # Summaries (8 languages)
             summary_zh=article_data.summary_zh,
+            summary_zh_tw=article_data.summary_zh_tw,
             summary_en=article_data.summary_en,
+            summary_ja=article_data.summary_ja,
+            summary_es=article_data.summary_es,
+            summary_fr=article_data.summary_fr,
+            summary_ar=article_data.summary_ar,
+            summary_hi=article_data.summary_hi,
+            # Leads (8 languages)
             lead_zh=article_data.lead_zh,
+            lead_zh_tw=article_data.lead_zh_tw,
             lead_en=article_data.lead_en,
+            lead_ja=article_data.lead_ja,
+            lead_es=article_data.lead_es,
+            lead_fr=article_data.lead_fr,
+            lead_ar=article_data.lead_ar,
+            lead_hi=article_data.lead_hi,
+            # Content (8 languages)
             content_zh=content_zh_dict,
+            content_zh_tw=content_zh_tw_dict,
             content_en=content_en_dict,
+            content_ja=content_ja_dict,
+            content_es=content_es_dict,
+            content_fr=content_fr_dict,
+            content_ar=content_ar_dict,
+            content_hi=content_hi_dict,
+            # Image
             image_url=article_data.image_url,
             image_caption_zh=article_data.image_caption_zh,
+            image_caption_zh_tw=article_data.image_caption_zh_tw,
             image_caption_en=article_data.image_caption_en,
+            image_caption_ja=article_data.image_caption_ja,
+            image_caption_es=article_data.image_caption_es,
+            image_caption_fr=article_data.image_caption_fr,
+            image_caption_ar=article_data.image_caption_ar,
+            image_caption_hi=article_data.image_caption_hi,
+            # Other
             author=article_data.author,
             published_at=article_data.published_at or datetime.utcnow()
         )
@@ -184,11 +227,16 @@ class ArticleService:
         # Update fields
         update_data = article_data.model_dump(exclude_unset=True)
         
-        # Convert content blocks to dict if present
-        if 'content_zh' in update_data and update_data['content_zh'] is not None:
-            update_data['content_zh'] = [block.model_dump() for block in article_data.content_zh]
-        if 'content_en' in update_data and update_data['content_en'] is not None:
-            update_data['content_en'] = [block.model_dump() for block in article_data.content_en]
+        # Convert content blocks to dict if present (all 8 languages)
+        # Use exclude_none=False to preserve all fields, even if None
+        content_fields = ['content_zh', 'content_zh_tw', 'content_en', 'content_ja',
+                         'content_es', 'content_fr', 'content_ar', 'content_hi']
+
+        for field in content_fields:
+            if field in update_data and update_data[field] is not None:
+                content_attr = getattr(article_data, field)
+                if content_attr is not None:
+                    update_data[field] = [block.model_dump(exclude_none=False) for block in content_attr]
         
         for field, value in update_data.items():
             setattr(article, field, value)

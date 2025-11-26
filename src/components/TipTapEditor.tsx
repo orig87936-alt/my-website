@@ -30,6 +30,57 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
+/**
+ * 批量上传图片，限制并发数
+ * @param images - 要上传的图片文件数组
+ * @param uploadFn - 上传函数
+ * @param concurrencyLimit - 并发限制（默认 5）
+ * @returns 上传结果数组（成功返回 URL，失败返回 null）
+ */
+async function uploadImagesWithConcurrencyLimit(
+  images: File[],
+  uploadFn: (file: File) => Promise<string>,
+  concurrencyLimit: number = 5
+): Promise<(string | null)[]> {
+  const results: (string | null)[] = [];
+
+  console.log(`📤 开始批量上传 ${images.length} 张图片，并发限制：${concurrencyLimit}`);
+
+  // 分批上传
+  for (let i = 0; i < images.length; i += concurrencyLimit) {
+    const batch = images.slice(i, i + concurrencyLimit);
+    const batchNumber = Math.floor(i / concurrencyLimit) + 1;
+    const totalBatches = Math.ceil(images.length / concurrencyLimit);
+
+    console.log(`📦 批次 ${batchNumber}/${totalBatches}: 上传 ${batch.length} 张图片`);
+
+    // 并发上传当前批次
+    const batchPromises = batch.map(async (image, index) => {
+      const globalIndex = i + index + 1;
+      try {
+        console.log(`  ⏳ [${globalIndex}/${images.length}] 开始上传: ${image.name}`);
+        const url = await uploadFn(image);
+        console.log(`  ✅ [${globalIndex}/${images.length}] 上传成功: ${image.name}`);
+        return url;
+      } catch (error) {
+        console.error(`  ❌ [${globalIndex}/${images.length}] 上传失败: ${image.name}`, error);
+        return null;
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+
+    console.log(`✅ 批次 ${batchNumber}/${totalBatches} 完成`);
+  }
+
+  const successCount = results.filter(r => r !== null).length;
+  const failCount = results.length - successCount;
+  console.log(`🎉 批量上传完成：${successCount} 成功，${failCount} 失败`);
+
+  return results;
+}
+
 interface TipTapEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -46,6 +97,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
   onImageUpload,
 }) => {
   const { language } = useLanguage();
+
+  console.log('📝 TipTapEditor rendered with value:', {
+    length: value?.length || 0,
+    preview: value?.substring(0, 100),
+    placeholder: placeholder
+  });
 
   const editor = useEditor({
     extensions: [
@@ -117,18 +174,33 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
             const { schema } = view.state;
             const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-            images.forEach((image) => {
-              onImageUpload(image)
-                .then((url) => {
-                  const node = schema.nodes.resizableImage.create({ src: url });
-                  const transaction = view.state.tr.insert(coordinates?.pos || 0, node);
-                  view.dispatch(transaction);
-                })
-                .catch((error) => {
-                  console.error('Image upload failed:', error);
-                  alert(language === 'zh' ? '图片上传失败' : 'Image upload failed');
+            // 批量上传图片，限制并发数为 5
+            uploadImagesWithConcurrencyLimit(images, onImageUpload, 5)
+              .then((urls) => {
+                // 插入所有成功上传的图片
+                urls.forEach((url) => {
+                  if (url) {
+                    const node = schema.nodes.resizableImage.create({ src: url });
+                    const transaction = view.state.tr.insert(coordinates?.pos || 0, node);
+                    view.dispatch(transaction);
+                  }
                 });
-            });
+
+                const successCount = urls.filter(url => url).length;
+                const failCount = images.length - successCount;
+
+                if (failCount > 0) {
+                  alert(
+                    language === 'zh'
+                      ? `上传完成：${successCount} 张成功，${failCount} 张失败`
+                      : `Upload complete: ${successCount} succeeded, ${failCount} failed`
+                  );
+                }
+              })
+              .catch((error) => {
+                console.error('Batch upload failed:', error);
+                alert(language === 'zh' ? '批量上传失败' : 'Batch upload failed');
+              });
 
             return true;
           }
@@ -144,8 +216,42 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = ({
 
   // 同步外部 value 变化
   useEffect(() => {
-    if (editor && value !== editor.storage.markdown.getMarkdown()) {
-      editor.commands.setContent(value);
+    if (!editor) {
+      console.log('🔄 TipTapEditor useEffect: editor not ready yet');
+      return;
+    }
+
+    const currentContent = editor.storage.markdown?.getMarkdown() || '';
+    const newValue = value || '';
+
+    console.log('🔄 TipTapEditor useEffect triggered:', {
+      newValue_length: newValue.length,
+      currentContent_length: currentContent.length,
+      are_equal: newValue === currentContent,
+      newValue_preview: newValue.substring(0, 100),
+      currentContent_preview: currentContent.substring(0, 100)
+    });
+
+    if (newValue !== currentContent) {
+      console.log('🔄 TipTapEditor: Updating content from external value');
+      console.log('  - New value length:', newValue.length);
+      console.log('  - New value preview:', newValue.substring(0, 200));
+      console.log('  - Current editor content length:', currentContent.length);
+
+      // 使用 setMarkdown 而不是 setContent，因为 value 是 Markdown 格式
+      if (editor.storage.markdown && editor.storage.markdown.setMarkdown) {
+        console.log('  - Using setMarkdown to set content');
+        editor.storage.markdown.setMarkdown(newValue);
+      } else {
+        console.log('  - Fallback to setContent');
+        editor.commands.setContent(newValue);
+      }
+
+      const afterContent = editor.storage.markdown?.getMarkdown() || '';
+      console.log('  - After setContent, editor content length:', afterContent.length);
+      console.log('  - After setContent, content preview:', afterContent.substring(0, 100));
+    } else {
+      console.log('🔄 TipTapEditor: Content unchanged, skipping update');
     }
   }, [value, editor]);
 

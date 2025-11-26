@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Send, Calendar as CalendarIcon, ArrowRight, CheckCircle, X, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ArrowRight, CheckCircle, Loader2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Calendar } from './ui/calendar';
 import { Button } from './ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { appointmentsAPI, AppointmentConfirmation, AvailableSlot, chatAPI, ChatResponse, SourceReference } from '../services/api';
+import { appointmentsAPI, AppointmentConfirmation, AvailableSlot } from '../services/api';
 
-// Message type for chat
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-  time: string;
-  sources?: SourceReference[];
-}
+// Message type for chat - REMOVED (备份在 ConsultingPage_ChatbotBackup.tsx)
 
 export function ConsultingPage() {
   const { language, t } = useLanguage();
@@ -22,18 +15,7 @@ export function ConsultingPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
 
-  // Chat state
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: t('consulting.chat.welcome'),
-      sender: 'bot',
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
+  // Chat state - REMOVED (备份在 ConsultingPage_ChatbotBackup.tsx)
 
   // Appointment form state
   const [formData, setFormData] = useState({
@@ -56,26 +38,14 @@ export function ConsultingPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationData, setConfirmationData] = useState<AppointmentConfirmation | null>(null);
 
-  const quickReplies = [
-    t('consulting.chat.q1'),
-    t('consulting.chat.q2'),
-    t('consulting.chat.q3')
-  ];
+  // quickReplies - REMOVED (备份在 ConsultingPage_ChatbotBackup.tsx)
 
   const timeSlots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
   ];
 
-  // Restore chat session from localStorage on mount
-  useEffect(() => {
-    const savedSessionId = localStorage.getItem('chat_session_id');
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-      // Optionally: load chat history
-      // loadChatHistory(savedSessionId);
-    }
-  }, []);
+  // Chat session restoration - REMOVED (备份在 ConsultingPage_ChatbotBackup.tsx)
 
   // Fetch available slots when date is selected
   useEffect(() => {
@@ -99,77 +69,7 @@ export function ConsultingPage() {
     }
   };
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || isSending) return;
-
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      text: inputValue,
-      sender: 'user',
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsSending(true);
-
-    try {
-      // Call chat API
-      const response: ChatResponse = await chatAPI.send({
-        message: userMessage.text,
-        session_id: sessionId || undefined
-      });
-
-      // Save session ID for multi-turn conversation
-      if (!sessionId) {
-        setSessionId(response.session_id);
-        // Persist to localStorage
-        localStorage.setItem('chat_session_id', response.session_id);
-      }
-
-      // Add bot response
-      const botMessage: Message = {
-        id: `bot-${Date.now()}`,
-        text: response.message,
-        sender: 'bot',
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        sources: response.sources
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-
-      // Fallback error message
-      const errorMessage: Message = {
-        id: `bot-error-${Date.now()}`,
-        text: language.startsWith('zh')
-          ? '抱歉，我暂时无法回答。请稍后再试或联系人工客服。'
-          : 'Sorry, I cannot respond right now. Please try again later or contact our support team.',
-        sender: 'bot',
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleQuickReply = async (reply: string) => {
-    if (reply === t('consulting.chat.q2')) {
-      setIsBookingOpen(true);
-      return;
-    }
-
-    // Set input value and trigger send
-    setInputValue(reply);
-
-    // Simulate a small delay to show the input
-    setTimeout(() => {
-      handleSend();
-    }, 100);
-  };
+  // handleSend and handleQuickReply - REMOVED (备份在 ConsultingPage_ChatbotBackup.tsx)
 
   const handleBooking = async () => {
     // Validation
@@ -236,8 +136,10 @@ export function ConsultingPage() {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6">
-              <MessageCircle className="w-4 h-4 text-[#00a4e4]" />
-              <span className="text-sm text-gray-300">{t('consulting.chat.title')}</span>
+              <CalendarIcon className="w-4 h-4 text-[#00a4e4]" />
+              <span className="text-sm text-gray-300">
+                {language.startsWith('zh') ? '专业咨询服务' : language === 'ja' ? 'プロフェッショナルコンサルティング' : language === 'es' ? 'Consultoría Profesional' : language === 'fr' ? 'Conseil Professionnel' : language === 'ar' ? 'استشارات احترافية' : language === 'hi' ? 'पेशेवर परामर्श' : 'Professional Consulting'}
+              </span>
             </div>
             <h1 className="text-6xl font-light text-white mb-6">
               {t('consulting.hero.title')}
@@ -246,7 +148,11 @@ export function ConsultingPage() {
               {t('consulting.hero.subtitle')}
             </p>
             <button
-              onClick={() => setIsBookingOpen(true)}
+              onClick={() => {
+                console.log('预约按钮被点击');
+                setIsBookingOpen(true);
+                console.log('isBookingOpen 设置为 true');
+              }}
               className="group inline-flex items-center gap-3 bg-[#00a4e4] hover:bg-[#0088c2] text-white px-10 py-4 rounded-full transition-all"
             >
               <CalendarIcon className="w-5 h-5" />
@@ -257,144 +163,88 @@ export function ConsultingPage() {
         </div>
       </section>
 
-      {/* Chatbot Section */}
+      {/* Calendar Section - 精美日历预约 */}
       <section className="py-20 px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="glass-dark rounded-3xl overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#00a4e4] to-[#3b5bdb] p-6 flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
-              </div>
-              <div>
-                <h3 className="text-white font-medium">
-                  {t('consulting.chat.title')}
-                </h3>
-                <p className="text-white/80 text-sm">
-                  {language.startsWith('zh') ? '在线 · 即时响应' : 'Online · Instant Response'}
-                </p>
+        <div className="max-w-6xl mx-auto">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              {language.startsWith('zh') ? '选择预约时间' : language === 'ja' ? '予約時間を選択' : language === 'es' ? 'Seleccione Fecha' : language === 'fr' ? 'Choisir une Date' : language === 'ar' ? 'اختر التاريخ' : language === 'hi' ? 'तारीख चुनें' : 'Select Appointment Date'}
+            </h2>
+            <p className="text-gray-400 text-lg">
+              {language.startsWith('zh') ? '点击日期即可进入预约表单' : language === 'ja' ? '日付をクリックして予約フォームに進む' : language === 'es' ? 'Haga clic en una fecha para reservar' : language === 'fr' ? 'Cliquez sur une date pour réserver' : language === 'ar' ? 'انقر على التاريخ للحجز' : language === 'hi' ? 'बुकिंग के लिए तारीख पर क्लिक करें' : 'Click on a date to book an appointment'}
+            </p>
+          </motion.div>
+
+          {/* Calendar Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="glass-dark rounded-3xl p-8 md:p-12 max-w-4xl mx-auto"
+          >
+            {/* Calendar - 放大并居中 */}
+            <div className="flex justify-center mb-8">
+              <div className="bg-gradient-to-br from-[#00a4e4]/10 to-[#3b5bdb]/10 rounded-2xl p-6 sm:p-12 border border-white/10 inline-block">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    setSelectedDate(date);
+                    if (date) {
+                      setIsBookingOpen(true);
+                    }
+                  }}
+                  disabled={{ before: new Date() }}
+                  fromMonth={new Date()} // 允许从当前月份开始导航
+                  captionLayout="buttons" // 使用按钮布局，隐藏下拉菜单
+                  className="rounded-lg"
+                  classNames={{
+                    day_selected: "bg-[#00a4e4] text-white hover:bg-[#0088c2] hover:text-white focus:bg-[#00a4e4] focus:text-white",
+                    day_today: "bg-transparent text-white font-normal", // 今天不显示蓝色
+                    nav_button: "hover:bg-white/10 text-white", // 导航按钮样式
+                  }}
+                />
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="p-8 space-y-6 min-h-[400px] max-h-[500px] overflow-y-auto">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-6 py-4 ${
-                      message.sender === 'user'
-                        ? 'bg-[#00a4e4] text-white'
-                        : 'glass text-white'
-                    }`}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap">{message.text}</p>
-
-                    {/* Sources */}
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <p className="text-xs text-gray-400 mb-2">
-                          {language.startsWith('zh') ? '参考来源：' : 'Sources:'}
-                        </p>
-                        <div className="space-y-2">
-                          {message.sources.map((source, idx) => (
-                            <div
-                              key={idx}
-                              className="text-xs bg-white/5 rounded-lg p-2 hover:bg-white/10 transition-colors cursor-pointer"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-[#00a4e4] font-medium">
-                                  {source.type === 'faq' ? '📋 FAQ' : '📰 Article'}
-                                </span>
-                                <span className="text-gray-300">{source.title}</span>
-                              </div>
-                              {source.snippet && (
-                                <p className="text-gray-400 mt-1 line-clamp-2">{source.snippet}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <p className={`text-xs mt-2 ${
-                      message.sender === 'user' ? 'text-white/70' : 'text-gray-400'
-                    }`}>
-                      {message.time}
-                    </p>
-                  </div>
+            {/* Service Types - 横向布局 */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                {
+                  icon: '💼',
+                  title: language.startsWith('zh') ? '商业咨询' : language === 'ja' ? 'ビジネスコンサルティング' : language === 'es' ? 'Consultoría Empresarial' : language === 'fr' ? 'Conseil en Affaires' : language === 'ar' ? 'استشارات الأعمال' : language === 'hi' ? 'व्यापार परामर्श' : 'Business Consulting',
+                  desc: language.startsWith('zh') ? '战略规划、市场分析' : language === 'ja' ? '戦略計画、市場分析' : language === 'es' ? 'Planificación Estratégica' : language === 'fr' ? 'Planification Stratégique' : language === 'ar' ? 'التخطيط الاستراتيجي' : language === 'hi' ? 'रणनीतिक योजना' : 'Strategic Planning, Market Analysis'
+                },
+                {
+                  icon: '💻',
+                  title: language.startsWith('zh') ? '技术咨询' : language === 'ja' ? '技術コンサルティング' : language === 'es' ? 'Consultoría Técnica' : language === 'fr' ? 'Conseil Technique' : language === 'ar' ? 'استشارات تقنية' : language === 'hi' ? 'तकनीकी परामर्श' : 'Technical Consulting',
+                  desc: language.startsWith('zh') ? 'IT解决方案、数字化转型' : language === 'ja' ? 'ITソリューション、デジタル変革' : language === 'es' ? 'Soluciones IT' : language === 'fr' ? 'Solutions IT' : language === 'ar' ? 'حلول تكنولوجيا المعلومات' : language === 'hi' ? 'आईटी समाधान' : 'IT Solutions, Digital Transformation'
+                },
+                {
+                  icon: '📊',
+                  title: language.startsWith('zh') ? '财务咨询' : language === 'ja' ? '財務コンサルティング' : language === 'es' ? 'Consultoría Financiera' : language === 'fr' ? 'Conseil Financier' : language === 'ar' ? 'استشارات مالية' : language === 'hi' ? 'वित्तीय परामर्श' : 'Financial Consulting',
+                  desc: language.startsWith('zh') ? '投资规划、风险管理' : language === 'ja' ? '投資計画、リスク管理' : language === 'es' ? 'Planificación de Inversiones' : language === 'fr' ? 'Planification des Investissements' : language === 'ar' ? 'تخطيط الاستثمار' : language === 'hi' ? 'निवेश योजना' : 'Investment Planning, Risk Management'
+                }
+              ].map((service, idx) => (
+                <div key={idx} className="glass rounded-xl p-5 hover:bg-white/10 transition-all cursor-pointer group text-center">
+                  <span className="text-4xl block mb-3">{service.icon}</span>
+                  <h5 className="text-white font-medium group-hover:text-[#00a4e4] transition-colors mb-2">
+                    {service.title}
+                  </h5>
+                  <p className="text-gray-400 text-sm">{service.desc}</p>
                 </div>
               ))}
-
-              {/* Loading indicator */}
-              {isSending && (
-                <div className="flex items-start gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00a4e4] to-[#3b5bdb] flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="glass text-white max-w-[75%] rounded-2xl px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm text-gray-400">
-                        {language.startsWith('zh') ? '正在思考...' : 'Thinking...'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Quick Replies */}
-            {messages.length <= 2 && !isSending && (
-              <div className="px-8 py-4 border-t border-white/10">
-                <p className="text-gray-400 text-sm mb-3">
-                  {language.startsWith('zh') ? '推荐问题' : language === 'ja' ? 'おすすめの質問' : language === 'es' ? 'Preguntas Rápidas' : language === 'fr' ? 'Questions Rapides' : language === 'ar' ? 'أسئلة سريعة' : language === 'hi' ? 'त्वरित प्रश्न' : 'Quick Questions'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {quickReplies.map((reply, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickReply(reply)}
-                      className="glass px-4 py-2 rounded-full text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-all"
-                    >
-                      {reply}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Input */}
-            <div className="p-6 border-t border-white/10">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !isSending && handleSend()}
-                  placeholder={t('consulting.chat.placeholder')}
-                  disabled={isSending}
-                  className="flex-1 glass px-6 py-4 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00a4e4] disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isSending || !inputValue.trim()}
-                  className="bg-[#00a4e4] hover:bg-[#0088c2] text-white p-4 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#00a4e4]"
-                >
-                  {isSending ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Send className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -511,25 +361,17 @@ export function ConsultingPage() {
 
       {/* Booking Dialog */}
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] bg-[#0a2540] border-white/10 my-4 flex flex-col">
-          {/* Close Button */}
-          <button
-            onClick={() => setIsBookingOpen(false)}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-50"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="text-xl text-white pr-8">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto bg-[#0a2540] border-white/10 my-4">
+          <DialogHeader>
+            <DialogTitle className="text-base md:text-xl text-white">
               {t('consulting.appointment.calendar.title')}
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-400">
+            <DialogDescription className="text-xs md:text-sm text-gray-400">
               {t('consulting.appointment.desc')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2 overflow-y-auto flex-1 pr-2">
+          <div className="space-y-3 md:space-y-4 overflow-y-auto">
             {/* Contact Information */}
             <div className="space-y-3">
               <h3 className="text-base font-medium text-white">
@@ -606,16 +448,17 @@ export function ConsultingPage() {
 
             {/* Date Selection */}
             <div>
-              <h3 className="mb-2 text-base font-medium text-white">
+              <h3 className="mb-2 text-sm md:text-base font-medium text-white">
                 {language.startsWith('zh') ? '选择日期' : 'Select Date'}
               </h3>
-              <div className="flex justify-center">
+              <div className="flex justify-center -mx-2 md:mx-0">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  className="rounded-md border border-white/10 scale-90"
-                  disabled={(date) => date < new Date()}
+                  className="rounded-md border border-white/10 scale-[0.8] md:scale-90"
+                  disabled={{ before: new Date() }}
+                  captionLayout="buttons"
                 />
               </div>
             </div>
@@ -623,7 +466,7 @@ export function ConsultingPage() {
             {/* Time Selection */}
             {selectedDate && (
               <div>
-                <h3 className="mb-2 text-base font-medium text-white">
+                <h3 className="mb-2 text-sm md:text-base font-medium text-white">
                   {language.startsWith('zh') ? '选择时间' : 'Select Time'}
                   {loadingSlots && (
                     <span className="ml-2 text-xs text-gray-400">
@@ -631,7 +474,8 @@ export function ConsultingPage() {
                     </span>
                   )}
                 </h3>
-                <div className="grid grid-cols-4 gap-2">
+                {/* Time slots grid: 3 columns on mobile, 4 on desktop */}
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-1.5 md:gap-2">
                   {timeSlots.map((time) => {
                     const slotInfo = availableSlots.find(s => s.time_slot === time);
                     const isAvailable = slotInfo?.available !== false;
@@ -642,7 +486,7 @@ export function ConsultingPage() {
                         key={time}
                         onClick={() => isAvailable && setSelectedTime(time)}
                         disabled={!isAvailable || loadingSlots}
-                        className={`py-2 text-sm rounded-lg border transition-all ${
+                        className={`py-1.5 md:py-2 text-xs md:text-sm rounded-lg border transition-all ${
                           isSelected
                             ? 'bg-[#00a4e4] text-white border-[#00a4e4]'
                             : isAvailable
@@ -652,7 +496,7 @@ export function ConsultingPage() {
                       >
                         {time}
                         {!isAvailable && (
-                          <div className="text-[10px] mt-0.5">
+                          <div className="text-[9px] md:text-[10px] mt-0.5">
                             {language.startsWith('zh') ? '已满' : 'Full'}
                           </div>
                         )}
@@ -671,8 +515,8 @@ export function ConsultingPage() {
             )}
           </div>
 
-          {/* Footer - Fixed at bottom */}
-          <div className="flex-shrink-0 space-y-3 pt-4 border-t border-white/10">
+          {/* Footer */}
+          <div className="space-y-3 pt-4 border-t border-white/10">
             {/* Submit Button */}
             {selectedDate && selectedTime && (
               <Button

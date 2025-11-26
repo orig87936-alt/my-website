@@ -3,7 +3,8 @@
   import react from '@vitejs/plugin-react-swc';
   import path from 'path';
 
-  export default defineConfig({
+  export default defineConfig(({ mode }) => ({
+    base: mode === 'production' ? './' : '/', // 生产环境使用相对路径
     plugins: [react()],
     optimizeDeps: {
       include: [
@@ -126,9 +127,10 @@
       // 优化配置
       chunkSizeWarningLimit: 1000, // 提高警告阈值到 1MB
       minify: 'esbuild', // 使用 esbuild 压缩（更快）
-      // 生产环境移除 console
+      // 生产环境移除 console (暂时禁用以便调试)
       esbuild: {
-        drop: ['console', 'debugger'],
+        // drop: ['console', 'debugger'],  // 暂时注释掉以便查看日志
+        drop: ['debugger'],  // 只移除 debugger
       },
     },
     server: {
@@ -145,4 +147,4 @@
         ],
       },
     },
-  });
+  }));

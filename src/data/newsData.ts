@@ -5,19 +5,55 @@ import { articlesAPI, Article, ContentBlock as ApiContentBlock } from '../servic
 
 export interface NewsArticle {
   id: string;
+  // Titles (8 languages)
   titleZh: string;
   titleEn: string;
+  titleZhTw?: string;
+  titleJa?: string;
+  titleEs?: string;
+  titleFr?: string;
+  titleAr?: string;
+  titleHi?: string;
+  // Dates (8 languages)
   dateZh: string;
   dateEn: string;
+  dateZhTw?: string;
+  dateJa?: string;
+  dateEs?: string;
+  dateFr?: string;
+  dateAr?: string;
+  dateHi?: string;
+  // Author and metadata
   author: string;
-  category?: string; // Added for API integration
+  category?: string;
   image: string;
+  // Image captions (8 languages)
   imageCaptionZh: string;
   imageCaptionEn: string;
+  imageCaptionZhTw?: string;
+  imageCaptionJa?: string;
+  imageCaptionEs?: string;
+  imageCaptionFr?: string;
+  imageCaptionAr?: string;
+  imageCaptionHi?: string;
+  // Lead paragraphs (8 languages)
   leadZh: string;
   leadEn: string;
+  leadZhTw?: string;
+  leadJa?: string;
+  leadEs?: string;
+  leadFr?: string;
+  leadAr?: string;
+  leadHi?: string;
+  // Content (8 languages)
   contentZh: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
   contentEn: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentZhTw?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentJa?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentEs?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentFr?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentAr?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
+  contentHi?: Array<{ type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown'; text?: string; items?: string[]; url?: string; caption?: string; language?: string; level?: number; width?: number; height?: number }>;
 }
 
 // 默认新闻数据
@@ -1397,10 +1433,14 @@ export const defaultNewsArticles: Record<string, NewsArticle> = {
  * Convert API Article format to local NewsArticle format
  */
 function convertApiToLocal(apiArticle: Article): NewsArticle {
+  console.log('🔄 Converting API article to local format:', apiArticle.id);
+  console.log('📦 API content_zh:', apiArticle.content_zh);
+  console.log('📦 API content_en:', apiArticle.content_en);
+
   // Parse published date
   const publishedDate = new Date(apiArticle.published_at);
 
-  // Format dates
+  // Format dates for all 8 languages
   const dateZh = publishedDate.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
@@ -1411,22 +1451,58 @@ function convertApiToLocal(apiArticle: Article): NewsArticle {
     month: 'long',
     day: 'numeric'
   });
+  const dateZhTw = publishedDate.toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const dateJa = publishedDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const dateEs = publishedDate.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const dateFr = publishedDate.toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const dateAr = publishedDate.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const dateHi = publishedDate.toLocaleDateString('hi-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   // Convert content blocks
-  const convertContent = (blocks: ApiContentBlock[]) => {
-    return blocks.map(block => {
+  const convertContent = (blocks: ApiContentBlock[], lang: string) => {
+    console.log(`🔄 Converting ${blocks.length} content blocks (${lang})`);
+
+    const converted = blocks.map((block, index) => {
+      // ✅ Use 'content' field first, fallback to 'text' for backward compatibility
+      const textContent = block.content || block.text || '';
+
+      let result;
       if (block.type === 'list') {
-        return { type: 'list' as const, items: block.items || [] };
+        result = { type: 'list' as const, items: block.items || [] };
       } else if (block.type === 'heading') {
-        return { type: 'heading' as const, text: block.text || '', level: block.level };
+        result = { type: 'heading' as const, text: textContent, level: block.level };
       } else if (block.type === 'markdown') {
         // ✅ 保留 markdown 类型，以便 MarkdownRenderer 可以正确解析
-        return { type: 'markdown' as const, text: block.text || '' };
+        result = { type: 'markdown' as const, text: textContent };
       } else if (block.type === 'paragraph') {
-        return { type: 'paragraph' as const, text: block.text || '' };
+        result = { type: 'paragraph' as const, text: textContent };
       } else if (block.type === 'image') {
         // ✅ 保留图片块的所有属性
-        return {
+        result = {
           type: 'image' as const,
           url: block.url || '',
           caption: block.caption || '',
@@ -1435,33 +1511,78 @@ function convertApiToLocal(apiArticle: Article): NewsArticle {
         };
       } else if (block.type === 'code') {
         // ✅ 保留代码块的所有属性
-        return { type: 'code' as const, text: block.text || '', language: block.language || 'text' };
+        result = { type: 'code' as const, text: textContent, language: block.language || 'text' };
       } else if (block.type === 'quote') {
         // ✅ 保留引用块的所有属性
-        return { type: 'quote' as const, text: block.text || '' };
+        result = { type: 'quote' as const, text: textContent };
       } else {
         // 未知类型，转换为段落
-        return { type: 'paragraph' as const, text: block.text || '' };
+        console.warn(`⚠️ Unknown block type: ${block.type}`, block);
+        result = { type: 'paragraph' as const, text: textContent };
       }
+
+      return result;
     });
+
+    console.log(`✅ Converted ${converted.length} blocks (${lang})`);
+    return converted;
   };
 
-  return {
+  const result: NewsArticle = {
     id: apiArticle.id,
+    // Titles (8 languages)
     titleZh: apiArticle.title_zh,
     titleEn: apiArticle.title_en,
+    titleZhTw: apiArticle.title_zh_tw,
+    titleJa: apiArticle.title_ja,
+    titleEs: apiArticle.title_es,
+    titleFr: apiArticle.title_fr,
+    titleAr: apiArticle.title_ar,
+    titleHi: apiArticle.title_hi,
+    // Dates (8 languages)
     dateZh,
     dateEn,
+    dateZhTw,
+    dateJa,
+    dateEs,
+    dateFr,
+    dateAr,
+    dateHi,
+    // Author and metadata
     author: apiArticle.author,
-    category: apiArticle.category, // Include category from API
+    category: apiArticle.category,
     image: apiArticle.image_url || '',
-    imageCaptionZh: '', // Not in API model, use empty string
-    imageCaptionEn: '', // Not in API model, use empty string
+    // Image captions (8 languages) - not in current API model
+    imageCaptionZh: '',
+    imageCaptionEn: '',
+    imageCaptionZhTw: '',
+    imageCaptionJa: '',
+    imageCaptionEs: '',
+    imageCaptionFr: '',
+    imageCaptionAr: '',
+    imageCaptionHi: '',
+    // Lead paragraphs (8 languages)
     leadZh: apiArticle.summary_zh,
     leadEn: apiArticle.summary_en,
-    contentZh: convertContent(apiArticle.content_zh),
-    contentEn: convertContent(apiArticle.content_en),
+    leadZhTw: apiArticle.summary_zh_tw,
+    leadJa: apiArticle.summary_ja,
+    leadEs: apiArticle.summary_es,
+    leadFr: apiArticle.summary_fr,
+    leadAr: apiArticle.summary_ar,
+    leadHi: apiArticle.summary_hi,
+    // Content (8 languages)
+    contentZh: convertContent(apiArticle.content_zh, 'zh'),
+    contentEn: convertContent(apiArticle.content_en, 'en'),
+    contentZhTw: apiArticle.content_zh_tw ? convertContent(apiArticle.content_zh_tw, 'zh-tw') : undefined,
+    contentJa: apiArticle.content_ja ? convertContent(apiArticle.content_ja, 'ja') : undefined,
+    contentEs: apiArticle.content_es ? convertContent(apiArticle.content_es, 'es') : undefined,
+    contentFr: apiArticle.content_fr ? convertContent(apiArticle.content_fr, 'fr') : undefined,
+    contentAr: apiArticle.content_ar ? convertContent(apiArticle.content_ar, 'ar') : undefined,
+    contentHi: apiArticle.content_hi ? convertContent(apiArticle.content_hi, 'hi') : undefined,
   };
+
+  console.log('✅ Converted article:', result);
+  return result;
 }
 
 /**
@@ -1488,32 +1609,63 @@ function convertLocalToApi(newsArticle: NewsArticle): Partial<Article> {
 
     // Otherwise, convert each block individually
     return blocks.map(block => {
-      if (block.type === 'list') {
-        return { type: 'list', items: block.items || [] };
-      } else if (block.type === 'heading') {
-        return { type: 'heading', text: block.text || '', level: block.level };
-      } else if (block.type === 'image') {
-        // ✅ 保留图片块的所有属性
+      // Ensure type is valid
+      const validTypes = ['paragraph', 'heading', 'list', 'quote', 'code', 'image', 'markdown'];
+      const blockType = validTypes.includes(block.type) ? block.type : 'paragraph';
+
+      if (blockType === 'list') {
+        return {
+          type: 'list',
+          items: block.items || [],
+          text: '' // Backend might require text field
+        };
+      } else if (blockType === 'heading') {
+        return {
+          type: 'heading',
+          text: block.text || '',
+          level: block.level || 2 // Default to h2 if not specified
+        };
+      } else if (blockType === 'image') {
+        // ✅ 保留图片块的所有属性，确保所有必需字段都存在
         return {
           type: 'image',
           url: block.url || '',
           caption: block.caption || '',
+          text: '', // Backend might require text field
           width: block.width,
           height: block.height
         };
-      } else if (block.type === 'code') {
+      } else if (blockType === 'code') {
         // ✅ 保留代码块的所有属性
-        return { type: 'code', text: block.text || '', language: block.language || 'text' };
-      } else if (block.type === 'quote') {
+        return {
+          type: 'code',
+          text: block.text || '',
+          language: block.language || 'text'
+        };
+      } else if (blockType === 'quote') {
         // ✅ 保留引用块的所有属性
-        return { type: 'quote', text: block.text || '' };
-      } else if (block.type === 'markdown') {
+        return {
+          type: 'quote',
+          text: block.text || ''
+        };
+      } else if (blockType === 'markdown') {
         // ✅ 保留 markdown 块
-        return { type: 'markdown', text: block.text || '' };
+        return {
+          type: 'markdown',
+          text: block.text || ''
+        };
       } else {
         // paragraph 类型
-        return { type: 'paragraph', text: block.text || '' };
+        return {
+          type: 'paragraph',
+          text: block.text || ''
+        };
       }
+    }).filter(block => {
+      // Filter out empty blocks (except images which might not have text)
+      if (block.type === 'image') return true;
+      if (block.type === 'list') return (block.items && block.items.length > 0);
+      return block.text && block.text.trim().length > 0;
     });
   };
 
@@ -1634,11 +1786,27 @@ export async function getNewsArticles(): Promise<Record<string, NewsArticle>> {
  */
 export async function getNewsArticle(id: string): Promise<NewsArticle | null> {
   try {
-    console.log(`🌐 Fetching article ${id} from API...`);
-    const apiArticle = await articlesAPI.get(id);
+    // Check if ID is a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let apiId = id;
+
+    // If not a UUID, check for ID mapping
+    if (!isUUID) {
+      const idMapping = JSON.parse(localStorage.getItem('article_id_mapping') || '{}');
+      if (idMapping[id]) {
+        apiId = idMapping[id];
+        console.log(`🔄 Using mapped ID for fetch: ${id} -> ${apiId}`);
+      } else {
+        console.log(`⚠️ No UUID mapping found for ${id}, using fallback`);
+        throw new Error('No UUID mapping found');
+      }
+    }
+
+    console.log(`🌐 Fetching article ${apiId} from API...`);
+    const apiArticle = await articlesAPI.get(apiId);
     return convertApiToLocal(apiArticle);
   } catch (error) {
-    console.error(`❌ Failed to fetch article ${id} from API:`, error);
+    console.log(`ℹ️ Failed to fetch article ${id} from API, using fallback:`, error);
 
     // Fallback to cache or default
     const cached = getFromCache();
@@ -1662,10 +1830,25 @@ export async function getNewsArticle(id: string): Promise<NewsArticle | null> {
  */
 export async function updateNewsArticle(id: string, article: NewsArticle): Promise<void> {
   try {
-    console.log(`🌐 Updating article ${id} via API...`);
+    // Check if this is a non-UUID ID that has been mapped to a UUID
+    let actualId = id;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    if (!isUUID) {
+      // Check if we have a mapping for this ID
+      const idMapping = JSON.parse(localStorage.getItem('article_id_mapping') || '{}');
+      if (idMapping[id]) {
+        actualId = idMapping[id];
+        console.log(`🔄 Using mapped ID: ${id} -> ${actualId}`);
+      } else {
+        throw new Error(`无法更新文章：ID "${id}" 不是有效的 UUID，且没有找到映射。请先创建文章。`);
+      }
+    }
+
+    console.log(`🌐 Updating article ${actualId} via API...`);
     console.log('📝 Article data:', article);
     const apiData = convertLocalToApi(article);
-    console.log('📤 API data to be sent:', apiData);
+    console.log('📤 API data to be sent:', JSON.stringify(apiData, null, 2));
 
     // Validate required fields
     if (!apiData.title_zh || apiData.title_zh.trim().length === 0) {
@@ -1681,8 +1864,20 @@ export async function updateNewsArticle(id: string, article: NewsArticle): Promi
       throw new Error('英文摘要至少需要20个字符');
     }
 
+    // Validate content blocks
+    if (!apiData.content_zh || !Array.isArray(apiData.content_zh) || apiData.content_zh.length === 0) {
+      throw new Error('中文内容不能为空');
+    }
+    if (!apiData.content_en || !Array.isArray(apiData.content_en) || apiData.content_en.length === 0) {
+      throw new Error('英文内容不能为空');
+    }
+
+    // Log content blocks for debugging
+    console.log('📝 Content blocks (ZH):', apiData.content_zh);
+    console.log('📝 Content blocks (EN):', apiData.content_en);
+
     console.log('✅ Validation passed, sending to API...');
-    await articlesAPI.update(id, apiData);
+    await articlesAPI.update(actualId, apiData);
     console.log('✅ Article updated successfully');
   } catch (error) {
     console.error(`❌ Failed to update article ${id}:`, error);
@@ -1692,8 +1887,9 @@ export async function updateNewsArticle(id: string, article: NewsArticle): Promi
 
 /**
  * Create new article (save to API only - no cache)
+ * Returns the created article with the backend-generated UUID
  */
-export async function createNewsArticle(article: NewsArticle): Promise<void> {
+export async function createNewsArticle(article: NewsArticle): Promise<Article> {
   try {
     console.log('🌐 Creating new article via API...');
     console.log('📝 Article data:', article);
@@ -1720,8 +1916,9 @@ export async function createNewsArticle(article: NewsArticle): Promise<void> {
     }
 
     console.log('✅ Validation passed, sending to API...');
-    await articlesAPI.create(apiData as any);
-    console.log('✅ Article created successfully');
+    const createdArticle = await articlesAPI.create(apiData as any);
+    console.log('✅ Article created successfully with ID:', createdArticle.id);
+    return createdArticle;
   } catch (error) {
     console.error('❌ Failed to create article:', error);
     throw error;

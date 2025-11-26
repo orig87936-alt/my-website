@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { getNewsArticle, NewsArticle } from '../data/newsData';
-import { NewsEditor } from './NewsEditor';
+import { NewsEditorV2 } from './NewsEditorV2';
 import { RelatedArticles } from './RelatedArticles';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -29,6 +29,10 @@ export function NewsDetailPage({
   const { isAdmin } = useAuth();
   const [showEditor, setShowEditor] = useState(isEditing);
   const [article, setArticle] = useState<NewsArticle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 判断是否为中文（简体或繁体）- 使用 useMemo 确保响应式更新
+  const isChinese = useMemo(() => language === 'zh-CN' || language === 'zh-TW', [language]);
 
   // 同步外部编辑状态
   useEffect(() => {
@@ -38,8 +42,10 @@ export function NewsDetailPage({
   // 加载文章数据
   useEffect(() => {
     async function loadArticle() {
+      setIsLoading(true);
       const loadedArticle = await getNewsArticle(articleId);
       setArticle(loadedArticle);
+      setIsLoading(false);
     }
     loadArticle();
   }, [articleId]);
@@ -69,39 +75,93 @@ export function NewsDetailPage({
     }
   };
 
-  // 判断是否为中文（简体或繁体）
-  const isChinese = language === 'zh-CN' || language === 'zh-TW';
+  // 使用 useMemo 计算 displayArticle，确保响应式更新
+  const displayArticle = useMemo(() => {
+    if (!article) return null;
 
-  // 如果文章数据已加载，使用加载的数据
-  const getArticleContent = () => {
-    if (article) {
-      return {
-        title: isChinese ? article.titleZh : article.titleEn,
-        date: isChinese ? article.dateZh : article.dateEn,
-        author: article.author,
-        breadcrumbs: [
-          { label: isChinese ? '首页' : 'Home', link: 'home' },
-          { label: isChinese ? '新闻与洞察' : 'News and Insights', link: 'news' },
-          { label: isChinese ? article.titleZh.substring(0, 20) + '...' : article.titleEn.substring(0, 20) + '...', link: '' }
-        ],
-        image: article.image,
-        imageCaption: isChinese ? article.imageCaptionZh : article.imageCaptionEn,
-        lead: isChinese ? article.leadZh : article.leadEn,
-        content: isChinese ? article.contentZh : article.contentEn,
-        relatedNews: []
-      };
-    }
+    // 语言映射：前端语言代码 -> 后端字段后缀
+    const langMap: Record<string, string> = {
+      'zh-CN': 'Zh',
+      'zh-TW': 'ZhTw',
+      'en': 'En',
+      'ja': 'Ja',
+      'es': 'Es',
+      'fr': 'Fr',
+      'ar': 'Ar',
+      'hi': 'Hi'
+    };
 
-    // 如果没有从localStorage加载到数据，返回null
-    return null;
-  };
+    const suffix = langMap[language] || 'En'; // 默认英文
 
-  const displayArticle = getArticleContent();
+    // 获取本地化字段的辅助函数
+    const getLocalizedField = (fieldName: string) => {
+      const key = `${fieldName}${suffix}` as keyof typeof article;
 
+      // 如果当前语言的内容不存在，回退到英文,再回退到中文
+      if (article[key]) {
+        return article[key];
+      } else if (article[`${fieldName}En` as keyof typeof article]) {
+        return article[`${fieldName}En` as keyof typeof article];
+      } else {
+        return article[`${fieldName}Zh` as keyof typeof article];
+      }
+    };
+
+    const title = getLocalizedField('title') as string;
+    const content = getLocalizedField('content') as any;
+    const currentIsChinese = language === 'zh-CN' || language === 'zh-TW';
+
+    // Debug: Log content
+    console.log('📰 NewsDetailPage getArticleContent:', {
+      language,
+      contentType: typeof content,
+      isArray: Array.isArray(content),
+      length: Array.isArray(content) ? content.length : 'N/A',
+      content: content
+    });
+
+    return {
+      title: title,
+      date: getLocalizedField('date') as string,
+      author: article.author,
+      breadcrumbs: [
+        { label: currentIsChinese ? '首页' : 'Home', link: 'home' },
+        { label: currentIsChinese ? '新闻与洞察' : 'News and Insights', link: 'news' },
+        { label: title.substring(0, 20) + '...', link: '' }
+      ],
+      image: article.image,
+      imageCaption: getLocalizedField('imageCaption') as string,
+      lead: getLocalizedField('lead') as string,
+      content: content,
+      relatedNews: []
+    };
+  }, [article, language]);
+
+  // 显示加载状态
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a2540] pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#00a4e4] mb-4"></div>
+          <p className="text-white text-xl">{isChinese ? '加载中...' : 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果加载完成但文章不存在
   if (!displayArticle) {
     return (
       <div className="min-h-screen bg-[#0a2540] pt-20 flex items-center justify-center">
-        <p className="text-white text-xl">{isChinese ? '文章未找到' : 'Article not found'}</p>
+        <div className="text-center">
+          <p className="text-white text-xl mb-4">{isChinese ? '文章未找到' : 'Article not found'}</p>
+          <button
+            onClick={onBack}
+            className="px-6 py-3 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-xl transition-all"
+          >
+            {isChinese ? '返回新闻列表' : 'Back to News'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -110,7 +170,7 @@ export function NewsDetailPage({
     <div className="min-h-screen bg-gradient-to-b from-[#0a2540] via-[#0d2847] to-[#0a2540]">
       {/* Editor Modal */}
       {showEditor && (
-        <NewsEditor articleId={articleId} onClose={handleEditorClose} />
+        <NewsEditorV2 articleId={articleId} onClose={handleEditorClose} />
       )}
 
       {/* Main Content */}
@@ -224,10 +284,11 @@ export function NewsDetailPage({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="prose prose-lg prose-invert max-w-none mb-32"
+            style={{ textAlign: 'justify' }}
           >
             {/* Lead Paragraph with special styling */}
             <div className="relative mb-12 pb-8 border-b border-white/10">
-              <p className="text-xl text-gray-200 leading-relaxed font-light first-letter:text-5xl first-letter:font-bold first-letter:text-[#00a4e4] first-letter:mr-2 first-letter:float-left">
+              <p className="text-xl text-gray-200 leading-relaxed font-light first-letter:text-5xl first-letter:font-bold first-letter:text-[#00a4e4] first-letter:mr-2 first-letter:float-left" style={{ textAlign: 'justify' }}>
                 {displayArticle.lead}
               </p>
             </div>

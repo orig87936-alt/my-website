@@ -233,25 +233,13 @@ export function ContactPage() {
 
             {/* Contact Info Footer */}
             <div className="mt-16 pt-12 border-t border-white/10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto text-sm">
-                <div>
-                  <div className="text-gray-400 mb-2">{language.startsWith('zh') ? '邮箱' : 'Email'}</div>
-                  <a href="mailto:contact@sl-consulting.com" className="text-[#00a4e4] hover:underline">
-                    contact@sl-consulting.com
-                  </a>
+              <div className="text-center">
+                <div className="text-gray-400 mb-3 text-lg">
+                  {language.startsWith('zh') ? '邮箱' : 'Email'}
                 </div>
-                <div>
-                  <div className="text-gray-400 mb-2">{language.startsWith('zh') ? '电话' : 'Phone'}</div>
-                  <a href="tel:+864008888888" className="text-[#00a4e4] hover:underline">
-                    +86 400 888 8888
-                  </a>
-                </div>
-                <div>
-                  <div className="text-gray-400 mb-2">{language.startsWith('zh') ? '网站' : 'Website'}</div>
-                  <a href="https://www.sl-consulting.com" className="text-[#00a4e4] hover:underline">
-                    www.sl-consulting.com
-                  </a>
-                </div>
+                <a href="mailto:business@s-l.ai" className="text-[#00a4e4] hover:underline text-2xl font-medium">
+                  business@s-l.ai
+                </a>
               </div>
             </div>
           </motion.div>

@@ -1,6 +1,6 @@
 # Deploy frontend to S3
 
-$BUCKET_NAME = "sl-news-frontend-20241115"
+$BUCKET_NAME = "sl-news-frontend"
 $BUILD_DIR = "build"
 
 Write-Host "Deploying frontend to S3..." -ForegroundColor Cyan

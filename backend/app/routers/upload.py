@@ -4,7 +4,9 @@
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from ..utils.dependencies import require_admin
+from ..core.deps import require_admin
+from ..models.user import User
+from ..config import settings
 import os
 import uuid
 from pathlib import Path
@@ -18,16 +20,16 @@ UPLOAD_DIR = Path("uploads/images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # 允许的文件扩展名
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
-# 最大文件大小：5MB
-MAX_FILE_SIZE = 5 * 1024 * 1024
+# 最大文件大小：10MB（从文档中提取的图片可能较大）
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 @router.post("/image", response_model=Dict[str, str])
 async def upload_image(
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ) -> Dict[str, str]:
     """
     上传图片文件
@@ -77,16 +79,18 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
     
-    # 返回文件URL（相对路径）
-    file_url = f"/uploads/images/{unique_filename}"
-    
+    # 返回文件URL（完整URL，包含后端服务器地址）
+    # 使用配置的 PUBLIC_API_URL 来构建浏览器可访问的图片 URL
+    public_api_url = settings.PUBLIC_API_URL.rstrip('/')  # 移除末尾的斜杠
+    file_url = f"{public_api_url}/uploads/images/{unique_filename}"
+
     return {"url": file_url}
 
 
 @router.delete("/image", response_model=Dict[str, str])
 async def delete_image(
     url: str,
-    current_user: dict = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ) -> Dict[str, str]:
     """
     删除图片文件

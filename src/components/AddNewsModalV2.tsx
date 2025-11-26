@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { LiveNewsItem } from '../data/liveNewsData';
 import { MultiLangInput } from './MultiLangInput';
 import { X } from 'lucide-react';
+import { NEWS_CATEGORIES } from '../constants/newsCategories';
 
 interface AddNewsModalV2Props {
   news: LiveNewsItem | null;
@@ -37,12 +38,12 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
       return;
     }
 
-    if (!formData.title['zh'] || !formData.title['en']) {
+    if (!formData.title['zh-CN'] || !formData.title['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文标题' : 'Please fill in Chinese and English titles');
       return;
     }
 
-    if (!formData.summary['zh'] || !formData.summary['en']) {
+    if (!formData.summary['zh-CN'] || !formData.summary['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文摘要' : 'Please fill in Chinese and English summaries');
       return;
     }
@@ -108,10 +109,11 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
                 className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00a4e4]"
                 required
               >
-                <option value="business">{language.startsWith('zh') ? '商业' : 'Business'}</option>
-                <option value="technology">{language.startsWith('zh') ? '技术' : 'Technology'}</option>
-                <option value="finance">{language.startsWith('zh') ? '金融' : 'Finance'}</option>
-                <option value="research">{language.startsWith('zh') ? '研究' : 'Research'}</option>
+                {NEWS_CATEGORIES.map(cat => (
+                  <option key={cat.value} value={cat.value} className="bg-[#0a2540] text-white">
+                    {language.startsWith('zh') ? cat.labelZh : cat.labelEn}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -122,8 +124,9 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
               onChange={(values) => setFormData({ ...formData, readTime: values })}
               type="text"
               placeholder="2分钟阅读 / 2 min read"
-              requiredLangs={['zh']}
+              requiredLangs={['zh-CN']}
               expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Title (Multi-Language) - 8 languages */}
@@ -133,8 +136,9 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
               onChange={(values) => setFormData({ ...formData, title: values })}
               type="text"
               placeholder={language.startsWith('zh') ? '输入新闻标题' : 'Enter news title'}
-              requiredLangs={['zh']}
+              requiredLangs={['zh-CN']}
               expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Summary (Multi-Language) - 8 languages */}
@@ -144,9 +148,10 @@ export function AddNewsModalV2({ news, onSave, onClose, language }: AddNewsModal
               onChange={(values) => setFormData({ ...formData, summary: values })}
               type="textarea"
               placeholder={language.startsWith('zh') ? '输入新闻摘要' : 'Enter news summary'}
-              requiredLangs={['zh']}
+              requiredLangs={['zh-CN']}
               expandedByDefault={false}
               rows={4}
+              theme="dark"
             />
           </div>
 

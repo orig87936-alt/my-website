@@ -31,6 +31,7 @@ build
 # Environment variables
 .env
 .env.local
+.env.production
 .env.production.local
 .env.development.local
 .env.test.local
@@ -86,3 +87,100 @@ new_article.json
 article_data.json
 article_content_raw.txt
 translation_result.json
+*.zip
+*.tar.gz
+frontend-build.*
+backend-update.*
+
+# Deployment scripts (temporary/local)
+deploy-*.ps1
+deploy-*.sh
+upload-*.ps1
+upload-*.py
+fix-*.ps1
+fix-*.sh
+check-*.ps1
+check-*.sh
+test-*.ps1
+test-*.sh
+monitor-*.ps1
+monitor-*.sh
+verify-*.ps1
+restart-*.sh
+watch-*.sh
+clean-*.ps1
+force-*.ps1
+quick-*.ps1
+add-*.ps1
+add-*.sh
+update-*.ps1
+capture-*.sh
+
+# Documentation (temporary/generated)
+*修复*.md
+*部署*.md
+*完成*.md
+*说明*.md
+*指南*.md
+*报告*.md
+*总结*.md
+*步骤*.md
+DEPLOYMENT_*.md
+APPOINTMENT_*.md
+CALENDAR_*.md
+CORS_*.md
+EMAIL_*.md
+FORM_*.md
+MOBILE_*.md
+QUICK_*.md
+RESPONSIVE_*.md
+SMTP_*.md
+UPLOAD_*.md
+DNS*.md
+GoDaddy*.md
+
+# Test and debug files
+test_*.py
+check_*.py
+debug_*.py
+verify_*.py
+analyze_*.py
+find_*.py
+fix_*.py
+add_*.py
+clear_*.py
+convert_*.py
+import_*.py
+monitor_*.py
+create_test_*.py
+stress_test_*.py
+extracted_images/
+temp_*.txt
+temp_*.py
+server-index-*.js
+
+# HTML test pages
+*.html
+!index.html
+!public/*.html
+
+# Config files (temporary)
+*.conf
+!vite.config.ts
+nginx-config/
+api.s-l.ai*.conf
+nginx-*.conf
+
+# Backup files
+*_backup.tsx
+*_Backup.tsx
+*.backup
+.amazonq/
+
+# Screenshots
+*.png
+!public/*.png
+!src/assets/*.png
+
+# JSON logs
+*_2025-*.json

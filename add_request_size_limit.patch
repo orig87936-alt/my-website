@@ -1,0 +1,33 @@
+--- a/app/main.py
++++ b/app/main.py
+@@ -118,6 +118,28 @@ app.add_middleware(
+     max_age=3600,
+ )
+ 
++# Request body size limit middleware
++@app.middleware("http")
++async def limit_request_size(request: Request, call_next):
++    """
++    Limit request body size to prevent memory issues.
++    Maximum size: 20MB (for document uploads)
++    """
++    MAX_REQUEST_SIZE = 20 * 1024 * 1024  # 20MB
++    
++    # Check Content-Length header
++    content_length = request.headers.get("content-length")
++    if content_length:
++        content_length = int(content_length)
++        if content_length > MAX_REQUEST_SIZE:
++            return JSONResponse(
++                status_code=413,
++                content={
++                    "detail": f"Request body too large. Maximum size: {MAX_REQUEST_SIZE / 1024 / 1024}MB"
++                }
++            )
++    
++    response = await call_next(request)
++    return response
++
+ # Security headers middleware
+ @app.middleware("http")
+

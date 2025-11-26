@@ -1,6 +1,7 @@
 /**
  * Multi-Language Input Component
  * T032-T050: Input field with support for 8 languages and auto-translation
+ * Updated: 2025-11-17 - Added theme support for light/dark backgrounds
  */
 
 import React, { useState } from 'react';
@@ -9,7 +10,7 @@ import { TranslateButton } from './TranslateButton';
 import { MultiLangTranslateButton } from './MultiLangTranslateButton';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-type SupportedLanguage = 'zh' | 'zh-tw' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+type SupportedLanguage = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
 
 interface MultiLangInputProps {
   /** Field label */
@@ -28,11 +29,13 @@ interface MultiLangInputProps {
   expandedByDefault?: boolean;
   /** Textarea rows */
   rows?: number;
+  /** Theme: 'light' for white background, 'dark' for dark background */
+  theme?: 'light' | 'dark';
 }
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  'zh': '简体中文',
-  'zh-tw': '繁体中文',
+  'zh-CN': '简体中文',
+  'zh-TW': '繁体中文',
   'en': 'English',
   'ja': '日本語',
   'es': 'Español',
@@ -41,7 +44,7 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   'hi': 'हिन्दी',
 };
 
-const LANGUAGE_CODES: SupportedLanguage[] = ['zh', 'zh-tw', 'en', 'ja', 'es', 'fr', 'ar', 'hi'];
+const LANGUAGE_CODES: SupportedLanguage[] = ['zh-CN', 'zh-TW', 'en', 'ja', 'es', 'fr', 'ar', 'hi'];
 
 export const MultiLangInput: React.FC<MultiLangInputProps> = ({
   label,
@@ -49,9 +52,10 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
   onChange,
   type = 'text',
   placeholder = '',
-  requiredLangs = ['zh', 'en'],
+  requiredLangs = ['zh-CN', 'en'],
   expandedByDefault = false,
   rows = 3,
+  theme = 'light',
 }) => {
   const [isExpanded, setIsExpanded] = useState(expandedByDefault);
 
@@ -95,19 +99,41 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
   const InputComponent = type === 'textarea' ? 'textarea' : 'input';
 
-  // Always use light theme styling (white background)
-  const isDarkTheme = false;
+  // Theme-based styles with inline styles for light theme to override global CSS
+  const isDarkTheme = theme === 'dark';
+
+  const labelStyle = isDarkTheme ? {} : { color: '#111827' };
+  const subLabelStyle = isDarkTheme ? {} : { color: '#1f2937' };
+  const inputStyle = isDarkTheme
+    ? {}
+    : {
+        color: '#111827',
+        backgroundColor: '#ffffff',
+        border: '1px solid #d1d5db'
+      };
+  const buttonStyle = isDarkTheme ? {} : { color: '#2563eb' };
+
+  const labelClass = isDarkTheme ? 'text-gray-200' : '';
+  const subLabelClass = isDarkTheme ? 'text-gray-300' : '';
+  const inputClass = isDarkTheme
+    ? 'border-white/20 bg-white/10 text-white placeholder:text-gray-400 focus:bg-white/15'
+    : 'bg-white placeholder:text-gray-400';
+  const buttonClass = isDarkTheme ? 'text-[#00a4e4] hover:text-[#0090cc]' : 'hover:text-blue-800';
+  const borderClass = isDarkTheme ? 'border-white/20' : 'border-gray-300';
+  const errorClass = isDarkTheme ? 'text-red-400' : '';
+  const errorStyle = isDarkTheme ? {} : { color: '#dc2626' };
+  const requiredStyle = isDarkTheme ? {} : { color: '#dc2626' };
 
   return (
     <div className="space-y-2 multilang-input-wrapper">
       {/* Label and Batch Translate Button */}
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-gray-900">
+        <label className={`block text-sm font-semibold ${labelClass}`} style={labelStyle}>
           {label}
-          {requiredLangs.length > 0 && <span className="text-red-600 ml-1">*</span>}
+          {requiredLangs.length > 0 && <span className="ml-1" style={requiredStyle}>*</span>}
         </label>
 
-        {primaryValue && getTargetLangs().length > 0 && (
+        {getTargetLangs().length > 0 && (
           <MultiLangTranslateButton
             text={primaryValue}
             sourceLang={primaryLang}
@@ -115,20 +141,22 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
             onTranslated={handleBatchTranslate}
             size="sm"
             buttonText={`翻译到其他 ${getTargetLangs().length} 种语言`}
+            disabled={!primaryValue}
           />
         )}
       </div>
 
       {/* Primary Language Input (Always Visible) */}
       <div className="space-y-2">
-        <div className="text-sm font-semibold text-gray-800">
+        <div className={`text-sm font-semibold ${subLabelClass}`} style={subLabelStyle}>
           {LANGUAGE_LABELS[primaryLang]}
         </div>
         <InputComponent
           type={type === 'text' ? 'text' : undefined}
           value={primaryValue}
           onChange={(e) => handleFieldChange(primaryLang, e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00a4e4] focus:border-[#00a4e4]"
+          className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a4e4] focus:border-[#00a4e4] ${inputClass}`}
+          style={inputStyle}
           placeholder={placeholder}
           rows={type === 'textarea' ? rows : undefined}
         />
@@ -138,7 +166,8 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+        className={`flex items-center gap-1 text-sm font-semibold ${buttonClass} transition-colors`}
+        style={buttonStyle}
       >
         {isExpanded ? (
           <>
@@ -155,33 +184,34 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Other Languages (Collapsible) */}
       {isExpanded && (
-        <div className="space-y-3 pl-4 border-l-2 border-gray-300">
+        <div className={`space-y-3 pl-4 border-l-2 ${borderClass}`}>
           {LANGUAGE_CODES.filter(lang => lang !== primaryLang).map((lang) => (
             <div key={lang} className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-gray-800">
+                <div className={`text-sm font-semibold ${subLabelClass}`} style={subLabelStyle}>
                   {LANGUAGE_LABELS[lang]}
                 </div>
-                {primaryValue && (
-                  <TranslateButton
-                    text={primaryValue}
-                    sourceLang={primaryLang}
-                    targetLang={lang}
-                    onTranslated={(translated) => handleTranslate(primaryLang, lang, translated)}
-                    size="sm"
-                    variant="ghost"
-                  />
-                )}
+                <TranslateButton
+                  text={primaryValue}
+                  sourceLang={primaryLang}
+                  targetLang={lang}
+                  onTranslated={(translated) => handleTranslate(primaryLang, lang, translated)}
+                  size="sm"
+                  variant="ghost"
+                  disabled={!primaryValue}
+                />
               </div>
               <InputComponent
                 type={type === 'text' ? 'text' : undefined}
                 value={values[lang] || ''}
                 onChange={(e) => handleFieldChange(lang, e.target.value)}
                 className={`
-                  w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900
+                  w-full px-3 py-2 text-sm border rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-[#00a4e4] focus:border-[#00a4e4]
+                  ${inputClass}
                   ${lang === 'ar' ? 'text-right' : ''}
                 `}
+                style={inputStyle}
                 placeholder={placeholder}
                 rows={type === 'textarea' ? rows : undefined}
                 dir={lang === 'ar' ? 'rtl' : 'ltr'}
@@ -193,7 +223,7 @@ export const MultiLangInput: React.FC<MultiLangInputProps> = ({
 
       {/* Required Languages Validation */}
       {requiredLangs.some(lang => !values[lang]) && (
-        <div className="text-sm text-red-600 font-semibold">
+        <div className={`text-sm font-semibold ${errorClass}`} style={errorStyle}>
           必填语言: {requiredLangs.filter(lang => !values[lang]).map(lang => LANGUAGE_LABELS[lang]).join(', ')}
         </div>
       )}

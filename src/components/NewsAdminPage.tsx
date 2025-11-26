@@ -289,9 +289,15 @@ export const NewsAdminPage: React.FC<NewsAdminPageProps> = ({
         isOpen={showUploadDialog}
         onClose={() => setShowUploadDialog(false)}
         onUploadSuccess={(result) => {
+          console.log('✅✅✅ DocumentUploadDialog onUploadSuccess called:', {
+            result_keys: result ? Object.keys(result) : [],
+            has_parse_result: !!result?.parse_result,
+            will_show_create_form: true
+          });
           setUploadedData(result);
           setShowUploadDialog(false);
           setShowCreateForm(true);
+          console.log('✅✅✅ State updated: showCreateForm = true, showUploadDialog = false');
         }}
       />
 

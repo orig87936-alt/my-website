@@ -2,6 +2,7 @@
 Appointment API endpoints
 """
 import asyncio
+import logging
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
@@ -20,19 +21,27 @@ from app.schemas.appointment import (
 )
 from app.services.appointment import AppointmentService
 from app.services.email import EmailService
+from app.services.smtp_email import SMTPEmailService
 from app.core.deps import require_admin
 from app.models.user import User
+from app.config import get_settings
+
+settings = get_settings()
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Initialize limiter
 limiter = Limiter(key_func=get_remote_address)
 
 
 async def send_confirmation_email_task(appointment: AppointmentResponse):
-    """后台任务：发送确认邮件"""
+    """后台任务：发送确认邮件（给客户和管理员）"""
     try:
-        success = await EmailService.send_appointment_confirmation(
+        # 1. 发送确认邮件给客户
+        customer_success = await SMTPEmailService.send_appointment_confirmation(
             to_email=appointment.email,
             name=appointment.name,
             confirmation_number=appointment.confirmation_number,
@@ -41,13 +50,27 @@ async def send_confirmation_email_task(appointment: AppointmentResponse):
             service_type=appointment.service_type,
             notes=appointment.notes
         )
-        
-        # 这里可以更新通知状态（需要 db session）
-        # 为了简化，我们在创建时已经设置为 pending
-        print(f"📧 确认邮件发送{'成功' if success else '失败'}: {appointment.email}")
-        
+
+        logger.info(f"📧 客户确认邮件发送{'成功' if customer_success else '失败'}: {appointment.email}")
+
+        # 2. 发送通知邮件给管理员
+        if settings.ADMIN_NOTIFICATION_EMAIL:
+            admin_success = await SMTPEmailService.send_admin_notification(
+                admin_email=settings.ADMIN_NOTIFICATION_EMAIL,
+                customer_name=appointment.name,
+                customer_email=appointment.email,
+                customer_phone=appointment.phone,
+                confirmation_number=appointment.confirmation_number,
+                appointment_date=str(appointment.appointment_date),
+                time_slot=appointment.time_slot,
+                service_type=appointment.service_type,
+                notes=appointment.notes
+            )
+
+            logger.info(f"📧 管理员通知邮件发送{'成功' if admin_success else '失败'}: {settings.ADMIN_NOTIFICATION_EMAIL}")
+
     except Exception as e:
-        print(f"❌ 发送确认邮件异常: {str(e)}")
+        logger.error(f"❌ 发送确认邮件异常: {str(e)}")
 
 
 @router.post("", response_model=AppointmentConfirmation, status_code=status.HTTP_201_CREATED)
@@ -84,11 +107,17 @@ async def create_appointment(
         
     except ValueError as e:
         # 时间槽冲突
+        logger.warning(f"⚠️ 预约时间槽冲突: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e)
         )
     except Exception as e:
+        # 记录详细错误信息
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"❌ 创建预约失败: {str(e)}")
+        logger.error(f"详细错误:\n{error_details}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"创建预约失败: {str(e)}"

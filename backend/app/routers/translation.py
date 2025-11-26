@@ -222,7 +222,8 @@ async def translate_to_multiple_languages(
             source_lang=translate_request.source_lang,
             target_langs=translate_request.target_langs,
             preserve_markdown_images=True,
-            max_concurrent=4
+            max_concurrent=4,
+            force_translate=translate_request.force_translate
         )
 
         # Convert results to response format

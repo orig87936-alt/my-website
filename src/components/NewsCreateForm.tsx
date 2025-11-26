@@ -85,19 +85,23 @@ export const NewsCreateForm: React.FC<NewsCreateFormProps> = ({
       const { parse_result } = initialData;
 
       console.log('📄 Initializing form from uploaded document:', parse_result);
+      console.log('📊 Translations data:', parse_result.translations);
+
+      // Extract English translations if available
+      const enTranslation = parse_result.translations?.en;
 
       return {
         category: parse_result.category || 'headline',
         title_zh: parse_result.title || '',
-        title_en: parse_result.title_en || '', // Use translated title if available
+        title_en: enTranslation?.title || '', // Use translated title from translations.en
         summary_zh: parse_result.summary || '',
-        summary_en: parse_result.summary_en || '', // Use translated summary if available
+        summary_en: enTranslation?.summary || '', // Use translated summary from translations.en
         lead_zh: '',
         lead_en: '',
         author: '',
-        image_url: parse_result.images_uploaded?.[0]?.uploaded_url || '',
+        image_url: '', // 不自动填充封面图片，让用户手动选择
         content_zh: contentBlocksToText(parse_result.content_zh || []),
-        content_en: parse_result.content_en ? contentBlocksToText(parse_result.content_en) : '',
+        content_en: enTranslation?.content ? contentBlocksToText(enTranslation.content) : '', // Use translated content from translations.en
         status: 'draft'
       };
     }

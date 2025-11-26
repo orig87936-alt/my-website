@@ -504,7 +504,8 @@ class TranslationService:
         source_lang: Optional[str] = None,
         target_langs: List[str] = None,
         preserve_markdown_images: bool = True,
-        max_concurrent: int = 4
+        max_concurrent: int = 4,
+        force_translate: bool = False
     ) -> Dict[str, Any]:
         """
         T008: 将文本翻译到多个目标语言（并发处理）
@@ -515,6 +516,7 @@ class TranslationService:
             target_langs: 目标语言代码列表
             preserve_markdown_images: 是否保留Markdown图片
             max_concurrent: 最大并发翻译数（默认4）
+            force_translate: 强制翻译，即使源语言和目标语言相同
 
         Returns:
             Dict，包含：
@@ -533,8 +535,9 @@ class TranslationService:
         if target_langs is None:
             target_langs = [lang for lang in SUPPORTED_LANGUAGES if lang != source_lang]
         else:
-            # 过滤掉源语言
-            target_langs = [lang for lang in target_langs if lang != source_lang]
+            # 只在非强制翻译模式下过滤掉源语言
+            if not force_translate:
+                target_langs = [lang for lang in target_langs if lang != source_lang]
 
         if not target_langs:
             print("⚠️  No target languages specified or all target languages are same as source")

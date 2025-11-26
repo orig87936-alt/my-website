@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Menu, X, Globe, Home, Briefcase, Newspaper, MessageSquare, Mail, Phone, MapPin, ChevronRight, LogOut, User, Settings, Calendar, LogIn, UserPlus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -49,28 +50,26 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   return (
     <>
       {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#05162a]/85 backdrop-blur-xl border-b border-white/10">
+      <nav className="mobile-top-nav fixed top-0 left-0 right-0 z-50 bg-[#05162a]/85 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-[1440px] mx-auto px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="mobile-top-nav-content flex items-center justify-between h-20">
             {/* Logo */}
             <div
-              className="flex items-center space-x-3 cursor-pointer group"
+              className="mobile-logo flex items-center cursor-pointer group"
               onClick={() => handleNavClick('home')}
             >
-              <div className="flex items-center gap-2">
-                <Logo size="sm" className="transition-transform duration-300 group-hover:scale-105" />
-              </div>
+              <Logo size="nav" className="transition-transform duration-300 group-hover:scale-105" />
             </div>
 
-            {/* Right Side - Language Switcher, User Menu/Auth Buttons & Menu Button */}
-            <div className="flex items-center space-x-3">
+            {/* Desktop Navigation */}
+            <div className="mobile-top-nav-right flex items-center gap-3">
               {/* Language Switcher */}
-              <div className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-2 border border-white/10">
+              <div className="mobile-language-selector flex items-center gap-2 bg-white/5 rounded-full px-3 py-2 border border-white/10">
                 <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as any)}
-                  className="appearance-none bg-transparent border-none text-white text-sm font-medium cursor-pointer focus:outline-none pl-1"
+                  className="appearance-none bg-transparent border-none text-white text-sm font-medium cursor-pointer focus:outline-none"
                 >
                   <option value="zh-CN" className="bg-[#0a2540]">中文（简体）</option>
                   <option value="zh-TW" className="bg-[#0a2540]">中文（繁體）</option>
@@ -88,72 +87,75 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                 <UserMenu onNavigate={onNavigate} />
               )}
 
-              {/* Auth Buttons (when not logged in) */}
+              {/* Auth Buttons (when not logged in) - 使用人形图标 */}
               {!isAuthenticated() && (
-                <div className="hidden md:flex items-center gap-2">
+                <div className="mobile-auth-buttons flex items-center gap-2">
                   <button
                     onClick={() => setIsLoginModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white hover:text-[#00a4e4] transition-colors"
+                    className="mobile-login-button p-2.5 text-white hover:text-[#00a4e4] hover:bg-white/5 rounded-lg transition-all duration-300"
+                    aria-label={language.startsWith('zh') ? '登录' : 'Login'}
+                    title={language.startsWith('zh') ? '登录' : 'Login'}
                   >
-                    <LogIn className="w-4 h-4" />
-                    {language.startsWith('zh') ? '登录' : 'Login'}
+                    <User className="w-6 h-6" />
                   </button>
                   <button
                     onClick={() => setIsRegisterModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-lg text-sm font-medium transition-colors"
+                    className="mobile-register-button p-2.5 bg-[#00a4e4] hover:bg-[#0088c2] text-white rounded-lg transition-all duration-300"
+                    aria-label={language.startsWith('zh') ? '注册' : 'Register'}
+                    title={language.startsWith('zh') ? '注册' : 'Register'}
                   >
-                    <UserPlus className="w-4 h-4" />
-                    {language.startsWith('zh') ? '注册' : 'Register'}
+                    <UserPlus className="w-6 h-6" />
                   </button>
                 </div>
               )}
 
-              {/* Hamburger Menu Button */}
+              {/* Hamburger Menu Button - Mobile Only */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 text-white hover:text-[#00a4e4] transition-colors md:hidden"
+                className="mobile-menu-button p-2 text-white hover:text-[#00a4e4] transition-colors md:hidden"
                 aria-label="Open menu"
               >
-                <Menu className="w-7 h-7" />
+                <Menu className="w-6 h-6" />
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm"
-              onClick={() => setIsSidebarOpen(false)}
-            />
+      {/* Sidebar Overlay - 使用 Portal 渲染到 body，避免受 #root 缩放影响 */}
+      {createPortal(
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-sm"
+                onClick={() => setIsSidebarOpen(false)}
+              />
 
-            {/* Sidebar Panel */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 h-screen w-[450px] bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429] z-[100] shadow-2xl overflow-y-auto"
-              style={{ maxWidth: '100vw' }}
-            >
+              {/* Sidebar Panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="fixed top-0 right-0 bottom-0 h-screen w-[450px] bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429] z-[100] shadow-2xl overflow-y-auto"
+                style={{ maxWidth: '100vw', paddingBottom: '120px' }}
+              >
               {/* Animated Background Gradient Orbs */}
-              <div className="absolute top-20 right-10 w-64 h-64 bg-[#00a4e4]/10 rounded-full blur-[100px] animate-pulse pointer-events-none" 
+              <div className="absolute top-20 right-10 w-64 h-64 bg-[#00a4e4]/10 rounded-full blur-[100px] animate-pulse pointer-events-none"
                    style={{ animationDuration: '8s' }} />
-              <div className="absolute bottom-40 left-10 w-64 h-64 bg-[#3b5bdb]/10 rounded-full blur-[100px] animate-pulse pointer-events-none" 
+              <div className="absolute bottom-40 left-10 w-64 h-64 bg-[#3b5bdb]/10 rounded-full blur-[100px] animate-pulse pointer-events-none"
                    style={{ animationDuration: '10s', animationDelay: '2s' }} />
-              
+
               {/* Noise Texture */}
               <div className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay"
                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }} />
-              
+
               {/* Grid Pattern Overlay */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
                 backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
@@ -192,11 +194,11 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               <div className="relative px-8 py-8">
                 {/* Navigation Section */}
                 <div className="mb-12">
-                  <motion.div 
+                  <motion.div
                     className="flex items-center gap-2 mb-6"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
                   >
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
                     <div className="text-xs uppercase tracking-widest text-[#00a4e4]/80 font-medium">
@@ -204,18 +206,18 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                     </div>
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
                   </motion.div>
-                  
+
                   <nav className="space-y-2">
                     {navItems.map((item, index) => {
                       const Icon = item.icon;
                       const isActive = currentPage === item.id;
-                      
+
                       return (
                         <motion.button
                           key={item.id}
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: 0.15 + index * 0.05 }}
+                          transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
                           onClick={() => handleNavClick(item.id)}
                           className={`group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden ${
                             isActive
@@ -248,26 +250,26 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                           <div className="relative flex items-center gap-4">
                             {/* Icon */}
                             <div className={`p-2 rounded-lg transition-all duration-300 ${
-                              isActive 
-                                ? 'bg-[#00a4e4]/20 text-[#00a4e4]' 
+                              isActive
+                                ? 'bg-[#00a4e4]/20 text-[#00a4e4]'
                                 : 'bg-white/5 text-gray-400 group-hover:bg-[#00a4e4]/10 group-hover:text-[#00a4e4]'
                             }`}>
                               <Icon className="w-5 h-5" />
                             </div>
-                            
+
                             {/* Label */}
                             <span className={`flex-1 transition-colors duration-300 ${
-                              isActive 
-                                ? 'text-white' 
+                              isActive
+                                ? 'text-white'
                                 : 'text-gray-300 group-hover:text-white'
                             }`}>
                               {item.label}
                             </span>
-                            
+
                             {/* Arrow indicator */}
                             <ChevronRight className={`w-4 h-4 transition-all duration-300 ${
-                              isActive 
-                                ? 'text-[#00a4e4] opacity-100 translate-x-0' 
+                              isActive
+                                ? 'text-[#00a4e4] opacity-100 translate-x-0'
                                 : 'text-gray-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#00a4e4]'
                             }`} />
                           </div>
@@ -277,67 +279,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   </nav>
                 </div>
 
-                {/* Auth Section (when not logged in) */}
-                {!isAuthenticated() && (
-                  <div className="mb-12">
-                    <motion.div
-                      className="flex items-center gap-2 mb-6"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.4 }}
-                    >
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
-                      <div className="text-xs uppercase tracking-widest text-[#00a4e4]/80 font-medium">
-                        {language.startsWith('zh') ? '账号' : 'Account'}
-                      </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#00a4e4]/30 to-transparent"></div>
-                    </motion.div>
 
-                    <div className="space-y-3">
-                      <motion.button
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.45 }}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setIsLoginModalOpen(true);
-                        }}
-                        className="group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden border border-white/5 hover:border-[#00a4e4]/30 hover:bg-white/5"
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="relative flex items-center gap-4">
-                          <div className="p-2 rounded-lg transition-all duration-300 bg-white/5 text-gray-400 group-hover:bg-[#00a4e4]/10 group-hover:text-[#00a4e4]">
-                            <LogIn className="w-5 h-5" />
-                          </div>
-                          <span className="flex-1 transition-colors duration-300 text-gray-300 group-hover:text-white">
-                            {language.startsWith('zh') ? '登录' : 'Login'}
-                          </span>
-                        </div>
-                      </motion.button>
-
-                      <motion.button
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.5 }}
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          setIsRegisterModalOpen(true);
-                        }}
-                        className="group relative block w-full text-left px-5 py-4 rounded-xl transition-all duration-300 overflow-hidden bg-gradient-to-r from-[#00a4e4]/20 to-[#3b5bdb]/20 border border-[#00a4e4]/30 hover:from-[#00a4e4]/30 hover:to-[#3b5bdb]/30"
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="relative flex items-center gap-4">
-                          <div className="p-2 rounded-lg transition-all duration-300 bg-[#00a4e4]/20 text-[#00a4e4]">
-                            <UserPlus className="w-5 h-5" />
-                          </div>
-                          <span className="flex-1 transition-colors duration-300 text-white">
-                            {language.startsWith('zh') ? '注册' : 'Register'}
-                          </span>
-                        </div>
-                      </motion.button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Admin Section */}
                 {adminNavItems.length > 0 && (
@@ -423,101 +365,6 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
                   </div>
                 )}
 
-                {/* Contact Info Section */}
-                <motion.div
-                  className="pt-8 border-t border-white/10"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                  <motion.div 
-                    className="flex items-center gap-2 mb-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.55 }}
-                  >
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#3b5bdb]/30 to-transparent"></div>
-                    <div className="text-xs uppercase tracking-widest text-[#3b5bdb]/80 font-medium">
-                      {language.startsWith('zh') ? '联系方式' : 'Contact'}
-                    </div>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#3b5bdb]/30 to-transparent"></div>
-                  </motion.div>
-                  
-                  <div className="space-y-3">
-                    {/* Email */}
-                    <motion.div 
-                      className="group p-4 rounded-xl border border-white/5 hover:border-[#00a4e4]/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.6 }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-[#00a4e4]/10 text-[#00a4e4] group-hover:bg-[#00a4e4]/20 transition-colors">
-                          <Mail className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-gray-400 text-xs mb-1">
-                            {language.startsWith('zh') ? '邮箱' : 'Email'}
-                          </div>
-                          <a 
-                            href="mailto:info@sl-consulting.com" 
-                            className="text-sm text-gray-200 hover:text-[#00a4e4] transition-colors break-all"
-                          >
-                            info@sl-consulting.com
-                          </a>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Phone */}
-                    <motion.div 
-                      className="group p-4 rounded-xl border border-white/5 hover:border-[#00a4e4]/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.65 }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-[#3b5bdb]/10 text-[#3b5bdb] group-hover:bg-[#3b5bdb]/20 transition-colors">
-                          <Phone className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-gray-400 text-xs mb-1">
-                            {language.startsWith('zh') ? '电话' : 'Phone'}
-                          </div>
-                          <a 
-                            href="tel:+8612345678900" 
-                            className="text-sm text-gray-200 hover:text-[#00a4e4] transition-colors"
-                          >
-                            +86 123 4567 8900
-                          </a>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Address */}
-                    <motion.div 
-                      className="group p-4 rounded-xl border border-white/5 hover:border-[#00a4e4]/30 bg-white/5 hover:bg-white/10 transition-all duration-300"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.7 }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-[#00a4e4]/10 text-[#00a4e4] group-hover:bg-[#00a4e4]/20 transition-colors">
-                          <MapPin className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-gray-400 text-xs mb-1">
-                            {language.startsWith('zh') ? '地址' : 'Address'}
-                          </div>
-                          <div className="text-sm text-gray-200">
-                            {language.startsWith('zh') ? '中国 · 北京' : 'Beijing, China'}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </motion.div>
-
                 {/* Footer */}
                 <motion.div 
                   className="mt-12 pt-8 border-t border-white/10"
@@ -546,7 +393,9 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
 
       {/* Auth Modals */}
       <LoginModal

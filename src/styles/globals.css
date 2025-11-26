@@ -193,6 +193,85 @@ html {
   scroll-behavior: smooth;
 }
 
+/* 移动端优化 */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px; /* 移动端基础字体稍小 */
+    -webkit-text-size-adjust: 100%; /* 防止 iOS 自动调整字体大小 */
+    -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+  }
+
+  /* 防止移动端横向滚动 */
+  body {
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-font-smoothing: antialiased; /* 优化字体渲染 */
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 确保主容器不会超出视口 */
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* 优化触摸目标大小 - 最小 44x44px */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 防止文本溢出 */
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* 优化图片显示 */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 优化视频显示 */
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 移动端间距优化 */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* 平板端优化 (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    font-size: 15px; /* 平板端字体大小介于移动端和桌面端之间 */
+  }
+
+  /* 优化触摸目标 */
+  button, a {
+    min-height: 40px;
+  }
+}
+
+/* 触摸设备通用优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 增加可点击区域的内边距 */
+  button, a {
+    padding: 0.75rem 1rem;
+  }
+
+  /* 优化表单元素 */
+  input, select, textarea {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
+}
+
 /* Custom Utilities */
 @layer utilities {
   .gradient-text {
@@ -264,4 +343,35 @@ html {
 
 .scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Thin scrollbar for dialog */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.scrollbar-thumb-white\/10::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
 }

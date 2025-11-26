@@ -1,0 +1,170 @@
+/*
+ * Mobile Scale System - 移动端智能缩放系统
+ * 
+ * 这是一个独立的缩放层,不会影响现有的 mobile.css
+ * 可以通过在 <body> 添加 class="enable-mobile-scale" 来启用
+ * 
+ * 使用方法:
+ * 1. 启用缩放: <body class="enable-mobile-scale">
+ * 2. 禁用缩放: <body> (移除 class)
+ * 
+ * 特点:
+ * - 完全独立,不影响现有样式
+ * - 保持桌面端布局结构
+ * - 智能适配不同设备
+ * - 可随时开关
+ */
+
+/* ============================================
+   CSS 变量定义
+   ============================================ */
+:root {
+  --mobile-scale-ratio: 1;
+  --mobile-base-font-size: 16px;
+}
+
+/* ============================================
+   缩放比例配置 - 仅在启用时生效
+   ============================================ */
+
+/* 小屏手机竖屏 (≤480px) - iPhone SE, iPhone 12 mini */
+body.enable-mobile-scale {
+  @media (max-width: 480px) and (orientation: portrait) {
+    --mobile-scale-ratio: 0.65;
+    --mobile-base-font-size: 14px;
+  }
+}
+
+/* 大屏手机竖屏 (481px-768px) - iPhone 14 Pro, Samsung Galaxy */
+body.enable-mobile-scale {
+  @media (min-width: 481px) and (max-width: 768px) and (orientation: portrait) {
+    --mobile-scale-ratio: 0.75;
+    --mobile-base-font-size: 15px;
+  }
+}
+
+/* 手机横屏 (≤768px) */
+body.enable-mobile-scale {
+  @media (max-width: 768px) and (orientation: landscape) {
+    --mobile-scale-ratio: 0.85;
+    --mobile-base-font-size: 15px;
+  }
+}
+
+/* 平板竖屏 (769px-1024px) - iPad */
+body.enable-mobile-scale {
+  @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+    --mobile-scale-ratio: 0.85;
+    --mobile-base-font-size: 15px;
+  }
+}
+
+/* 平板横屏 (769px-1280px) - iPad 横屏 */
+body.enable-mobile-scale {
+  @media (min-width: 769px) and (max-width: 1280px) and (orientation: landscape) {
+    --mobile-scale-ratio: 0.95;
+    --mobile-base-font-size: 16px;
+  }
+}
+
+/* ============================================
+   应用缩放 - 仅在启用时生效
+   ============================================ */
+
+/* 基础字体大小调整 */
+body.enable-mobile-scale {
+  @media (max-width: 1280px) {
+    font-size: var(--mobile-base-font-size);
+  }
+}
+
+/* 主容器缩放 - 使用 transform 实现等比例缩放 */
+body.enable-mobile-scale #root {
+  @media (max-width: 1280px) {
+    /* 应用缩放变换 */
+    transform: scale(var(--mobile-scale-ratio));
+    transform-origin: top center;
+    
+    /* 调整宽度以补偿缩放 */
+    width: calc(100% / var(--mobile-scale-ratio));
+    
+    /* 确保居中 */
+    margin-left: auto;
+    margin-right: auto;
+    
+    /* 优化渲染性能 */
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+}
+
+/* 防止横向滚动 */
+body.enable-mobile-scale {
+  @media (max-width: 1280px) {
+    overflow-x: hidden;
+    width: 100%;
+  }
+}
+
+/* ============================================
+   触摸优化 - 确保按钮可点击
+   ============================================ */
+body.enable-mobile-scale {
+  @media (max-width: 768px) {
+    /* 确保所有可点击元素有足够的触摸区域 */
+    button,
+    a,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"] {
+      min-height: 44px;
+      min-width: 44px;
+      touch-action: manipulation;
+    }
+    
+    /* 优化触摸反馈 */
+    * {
+      -webkit-tap-highlight-color: rgba(0, 164, 228, 0.2);
+    }
+  }
+}
+
+/* ============================================
+   文字可读性优化
+   ============================================ */
+body.enable-mobile-scale {
+  @media (max-width: 768px) {
+    /* 确保文字不会太小 */
+    p, span, div, li, td, th {
+      min-font-size: 14px;
+    }
+    
+    /* 标题最小尺寸 */
+    h1 { min-font-size: 24px; }
+    h2 { min-font-size: 20px; }
+    h3 { min-font-size: 18px; }
+    h4 { min-font-size: 16px; }
+    h5 { min-font-size: 14px; }
+    h6 { min-font-size: 14px; }
+  }
+}
+
+/* ============================================
+   性能优化
+   ============================================ */
+body.enable-mobile-scale {
+  @media (max-width: 1280px) {
+    /* GPU 加速 */
+    #root {
+      transform: translateZ(0) scale(var(--mobile-scale-ratio));
+    }
+    
+    /* 优化动画性能 */
+    * {
+      animation-duration: 0.3s !important;
+      transition-duration: 0.3s !important;
+    }
+  }
+}
+

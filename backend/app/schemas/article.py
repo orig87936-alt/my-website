@@ -4,12 +4,14 @@ Article schemas for request/response validation
 from datetime import datetime
 from typing import List, Optional, Any
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 # Content block schema
 class ContentBlock(BaseModel):
     """Content block for article content"""
+    model_config = ConfigDict(exclude_none=True)  # Exclude None values from JSON serialization
+
     type: str = Field(..., description="Block type: paragraph, heading, list, quote, code, image, markdown")
     text: Optional[str] = Field(None, description="Block text content")
     content: Optional[str] = Field(None, description="Block content (deprecated, use 'text')")
@@ -43,25 +45,25 @@ class ArticleBase(BaseModel):
     category: str = Field(..., description="Article category")
     status: str = Field(default="published", description="Article status")
 
-    # Titles (8 languages)
+    # Titles (8 languages) - Only Chinese is required
     title_zh: str = Field(..., min_length=1, max_length=500, description="Chinese (Simplified) title")
-    title_en: str = Field(..., min_length=1, max_length=500, description="English title")
-    title_zh_tw: Optional[str] = Field(None, min_length=1, max_length=500, description="Chinese (Traditional) title")
-    title_ja: Optional[str] = Field(None, min_length=1, max_length=500, description="Japanese title")
-    title_es: Optional[str] = Field(None, min_length=1, max_length=500, description="Spanish title")
-    title_fr: Optional[str] = Field(None, min_length=1, max_length=500, description="French title")
-    title_ar: Optional[str] = Field(None, min_length=1, max_length=500, description="Arabic title")
-    title_hi: Optional[str] = Field(None, min_length=1, max_length=500, description="Hindi title")
+    title_en: Optional[str] = Field(None, max_length=500, description="English title")
+    title_zh_tw: Optional[str] = Field(None, max_length=500, description="Chinese (Traditional) title")
+    title_ja: Optional[str] = Field(None, max_length=500, description="Japanese title")
+    title_es: Optional[str] = Field(None, max_length=500, description="Spanish title")
+    title_fr: Optional[str] = Field(None, max_length=500, description="French title")
+    title_ar: Optional[str] = Field(None, max_length=500, description="Arabic title")
+    title_hi: Optional[str] = Field(None, max_length=500, description="Hindi title")
 
-    # Summaries (8 languages)
+    # Summaries (8 languages) - Only Chinese is required
     summary_zh: str = Field(..., min_length=1, description="Chinese (Simplified) summary")
-    summary_en: str = Field(..., min_length=1, description="English summary")
-    summary_zh_tw: Optional[str] = Field(None, min_length=1, description="Chinese (Traditional) summary")
-    summary_ja: Optional[str] = Field(None, min_length=1, description="Japanese summary")
-    summary_es: Optional[str] = Field(None, min_length=1, description="Spanish summary")
-    summary_fr: Optional[str] = Field(None, min_length=1, description="French summary")
-    summary_ar: Optional[str] = Field(None, min_length=1, description="Arabic summary")
-    summary_hi: Optional[str] = Field(None, min_length=1, description="Hindi summary")
+    summary_en: Optional[str] = Field(None, description="English summary")
+    summary_zh_tw: Optional[str] = Field(None, description="Chinese (Traditional) summary")
+    summary_ja: Optional[str] = Field(None, description="Japanese summary")
+    summary_es: Optional[str] = Field(None, description="Spanish summary")
+    summary_fr: Optional[str] = Field(None, description="French summary")
+    summary_ar: Optional[str] = Field(None, description="Arabic summary")
+    summary_hi: Optional[str] = Field(None, description="Hindi summary")
 
     # Lead paragraphs (8 languages)
     lead_zh: Optional[str] = Field(None, description="Chinese (Simplified) lead paragraph")
@@ -107,9 +109,9 @@ class ArticleBase(BaseModel):
 # Create article schema
 class ArticleCreate(ArticleBase):
     """Schema for creating a new article (T019: 8-language support)"""
-    # Content blocks (8 languages)
+    # Content blocks (8 languages) - Only Chinese is required
     content_zh: List[ContentBlock] = Field(..., description="Chinese (Simplified) content blocks")
-    content_en: List[ContentBlock] = Field(..., description="English content blocks")
+    content_en: Optional[List[ContentBlock]] = Field(None, description="English content blocks")
     content_zh_tw: Optional[List[ContentBlock]] = Field(None, description="Chinese (Traditional) content blocks")
     content_ja: Optional[List[ContentBlock]] = Field(None, description="Japanese content blocks")
     content_es: Optional[List[ContentBlock]] = Field(None, description="Spanish content blocks")
@@ -203,6 +205,8 @@ class ArticleUpdate(BaseModel):
 # Article response schema (simplified for list view)
 class ArticleListItem(BaseModel):
     """Simplified article schema for list view (T019: 8-language support)"""
+    model_config = ConfigDict(from_attributes=True, exclude_none=True)
+
     id: UUID
     category: str
     status: str
@@ -233,13 +237,12 @@ class ArticleListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # Full article response schema
 class ArticleResponse(ArticleListItem):
     """Full article schema with content (T019: 8-language support)"""
+    # Inherits model_config from ArticleListItem (from_attributes=True, exclude_none=True)
+
     # Lead paragraphs (8 languages)
     lead_zh: Optional[str] = None
     lead_en: Optional[str] = None
@@ -250,15 +253,15 @@ class ArticleResponse(ArticleListItem):
     lead_ar: Optional[str] = None
     lead_hi: Optional[str] = None
 
-    # Content blocks (8 languages)
-    content_zh: List[Any]  # JSONB content blocks
-    content_en: List[Any]  # JSONB content blocks
-    content_zh_tw: Optional[List[Any]] = None
-    content_ja: Optional[List[Any]] = None
-    content_es: Optional[List[Any]] = None
-    content_fr: Optional[List[Any]] = None
-    content_ar: Optional[List[Any]] = None
-    content_hi: Optional[List[Any]] = None
+    # Content blocks (8 languages) - Use ContentBlock for proper serialization
+    content_zh: List[ContentBlock]  # Content blocks with exclude_none
+    content_en: List[ContentBlock]  # Content blocks with exclude_none
+    content_zh_tw: Optional[List[ContentBlock]] = None
+    content_ja: Optional[List[ContentBlock]] = None
+    content_es: Optional[List[ContentBlock]] = None
+    content_fr: Optional[List[ContentBlock]] = None
+    content_ar: Optional[List[ContentBlock]] = None
+    content_hi: Optional[List[ContentBlock]] = None
 
     # Image captions (8 languages)
     image_caption_zh: Optional[str] = None
@@ -269,9 +272,6 @@ class ArticleResponse(ArticleListItem):
     image_caption_fr: Optional[str] = None
     image_caption_ar: Optional[str] = None
     image_caption_hi: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 # Paginated article list response

@@ -1,39 +1,82 @@
-# 快速部署修复脚本
-# 用于将 main.py 的 CSP 修复部署到 EC2
+# Deploy Frontend Fix to EC2
+param(
+    [string]$ServerIP = "18.221.125.254",
+    [string]$KeyPath = "D:\download\sl-news-key.pem",
+    [string]$ServerUser = "ubuntu",
+    [string]$RemotePath = "/home/ubuntu/frontend"
+)
 
-Write-Host "🚀 开始部署 CSP 修复..." -ForegroundColor Green
+Write-Host "Deploying frontend to EC2..." -ForegroundColor Cyan
 
-# 1. 上传修复后的文件到 EC2
-Write-Host "`n📤 上传 main.py 到 EC2..." -ForegroundColor Cyan
-scp -i sl-news-key.pem backend/app/main.py ubuntu@18.221.125.254:/home/ubuntu/sl-news-platform/backend/app/main.py
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ 文件上传成功" -ForegroundColor Green
-} else {
-    Write-Host "❌ 文件上传失败" -ForegroundColor Red
+# Check SSH key
+if (-not (Test-Path $KeyPath)) {
+    Write-Host "ERROR: SSH key not found: $KeyPath" -ForegroundColor Red
     exit 1
 }
 
-# 2. 重启后端服务
-Write-Host "`n🔄 重启后端服务..." -ForegroundColor Cyan
-ssh -i sl-news-key.pem ubuntu@18.221.125.254 "sudo systemctl restart sl-news-backend"
+# Step 1: Build
+Write-Host "Step 1: Building..." -ForegroundColor Yellow
+if (Test-Path "build") {
+    Remove-Item -Recurse -Force "build"
+}
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ 服务重启成功" -ForegroundColor Green
-} else {
-    Write-Host "❌ 服务重启失败" -ForegroundColor Red
+npm run build
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Build complete" -ForegroundColor Green
+
+# Step 2: Create zip
+Write-Host "Step 2: Creating archive..." -ForegroundColor Yellow
+$ZipFile = "frontend-build.zip"
+if (Test-Path $ZipFile) {
+    Remove-Item $ZipFile -Force
+}
+Compress-Archive -Path "build\*" -DestinationPath $ZipFile
+Write-Host "Archive created" -ForegroundColor Green
+
+# Step 3: Upload
+Write-Host "Step 3: Uploading..." -ForegroundColor Yellow
+scp -i $KeyPath $ZipFile "${ServerUser}@${ServerIP}:/tmp/"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Upload failed" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Upload complete" -ForegroundColor Green
+
+# Step 4: Deploy
+Write-Host "Step 4: Deploying..." -ForegroundColor Yellow
+
+$deployScript = @"
+sudo rm -rf ${RemotePath}.backup
+sudo mv ${RemotePath} ${RemotePath}.backup 2>/dev/null || true
+sudo mkdir -p ${RemotePath}
+cd /tmp
+unzip -q -o frontend-build.zip -d frontend-temp
+sudo mv frontend-temp/* ${RemotePath}/
+sudo rm -rf frontend-temp
+sudo chown -R www-data:www-data ${RemotePath}
+sudo chmod -R 755 ${RemotePath}
+rm /tmp/frontend-build.zip
+ls -lh ${RemotePath} | head -10
+"@
+
+ssh -i $KeyPath "${ServerUser}@${ServerIP}" $deployScript
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Deploy failed" -ForegroundColor Red
     exit 1
 }
 
-# 3. 等待服务启动
-Write-Host "`n⏳ 等待服务启动（5秒）..." -ForegroundColor Cyan
-Start-Sleep -Seconds 5
+Write-Host ""
+Write-Host "Deployment successful!" -ForegroundColor Green
+Write-Host "Frontend: http://www.s-l.ai" -ForegroundColor Cyan
+Write-Host "Backend: http://api.s-l.ai" -ForegroundColor Cyan
+Write-Host ""
 
-# 4. 检查服务状态
-Write-Host "`n🔍 检查服务状态..." -ForegroundColor Cyan
-ssh -i sl-news-key.pem ubuntu@18.221.125.254 "sudo systemctl status sl-news-backend --no-pager"
-
-Write-Host "`n✅ 部署完成！" -ForegroundColor Green
-Write-Host "`n📝 请在浏览器中访问：" -ForegroundColor Yellow
-Write-Host "   http://18.221.125.254:8000/api/docs" -ForegroundColor Cyan
+# Cleanup
+Remove-Item $ZipFile -ErrorAction SilentlyContinue
 

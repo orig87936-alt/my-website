@@ -48,6 +48,7 @@ class MultiLangTranslateRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=50000, description="Text to translate (up to 50000 characters)")
     source_lang: Optional[str] = Field(None, pattern="^(zh|zh-tw|en|ja|es|fr|ar|hi)$", description="Source language (auto-detect if not provided)")
     target_langs: List[str] = Field(..., min_items=1, max_items=7, description="Target languages (1-7 languages)")
+    force_translate: bool = Field(False, description="Force translation even if source and target languages are the same")
 
     @field_validator('text')
     @classmethod

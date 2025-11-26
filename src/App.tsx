@@ -60,6 +60,7 @@ function AppContent() {
   }, []);
 
   const navigateToArticle = (id: string) => {
+    console.log('🔍 App.tsx: navigateToArticle called with ID:', id);
     setArticleId(id);
     setIsEditing(false);
     setCurrentPage('news-detail');

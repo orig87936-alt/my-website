@@ -74,7 +74,7 @@ count = 0
 for root, dirs, files in os.walk('.'):
     for file in files:
         local_path = os.path.join(root, file)
-        s3_path = os.path.relpath(local_path, '.').replace('\\\\', '/')
+        s3_path = os.path.relpath(local_path, '.').replace('\\', '/')
         ext = os.path.splitext(file)[1].lower()
         content_type = mime_types.get(ext, 'application/octet-stream')
 

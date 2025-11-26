@@ -20,12 +20,34 @@ console.log('🔧 API Configuration:', {
 // Types
 export interface Article {
   id: string;
+  // Titles (8 languages)
   title_zh: string;
   title_en: string;
+  title_zh_tw?: string;
+  title_ja?: string;
+  title_es?: string;
+  title_fr?: string;
+  title_ar?: string;
+  title_hi?: string;
+  // Summaries (8 languages)
   summary_zh: string;
   summary_en: string;
+  summary_zh_tw?: string;
+  summary_ja?: string;
+  summary_es?: string;
+  summary_fr?: string;
+  summary_ar?: string;
+  summary_hi?: string;
+  // Content (8 languages)
   content_zh: ContentBlock[];
   content_en: ContentBlock[];
+  content_zh_tw?: ContentBlock[];
+  content_ja?: ContentBlock[];
+  content_es?: ContentBlock[];
+  content_fr?: ContentBlock[];
+  content_ar?: ContentBlock[];
+  content_hi?: ContentBlock[];
+  // Metadata
   category: string;
   author: string;
   published_at: string;
@@ -37,8 +59,9 @@ export interface Article {
 }
 
 export interface ContentBlock {
-  type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote';
-  text?: string;
+  type: 'paragraph' | 'heading' | 'list' | 'image' | 'code' | 'quote' | 'markdown';
+  text?: string;  // Legacy field, may be null
+  content?: string;  // New field from backend
   items?: string[];
   level?: number;
   language?: string;
@@ -58,12 +81,34 @@ export interface ArticleListResponse {
 }
 
 export interface ArticleCreate {
+  // Titles (8 languages, zh & en required)
   title_zh: string;
   title_en: string;
+  title_zh_tw?: string;
+  title_ja?: string;
+  title_es?: string;
+  title_fr?: string;
+  title_ar?: string;
+  title_hi?: string;
+  // Summaries (8 languages, zh & en required)
   summary_zh: string;
   summary_en: string;
+  summary_zh_tw?: string;
+  summary_ja?: string;
+  summary_es?: string;
+  summary_fr?: string;
+  summary_ar?: string;
+  summary_hi?: string;
+  // Content (8 languages, zh & en required)
   content_zh: ContentBlock[];
   content_en: ContentBlock[];
+  content_zh_tw?: ContentBlock[];
+  content_ja?: ContentBlock[];
+  content_es?: ContentBlock[];
+  content_fr?: ContentBlock[];
+  content_ar?: ContentBlock[];
+  content_hi?: ContentBlock[];
+  // Metadata
   category: string;
   author: string;
   image_url?: string;
@@ -72,19 +117,37 @@ export interface ArticleCreate {
 }
 
 export interface ArticleUpdate {
+  // Titles (8 languages, all optional)
   title_zh?: string;
   title_en?: string;
+  title_zh_tw?: string;
+  title_ja?: string;
+  title_es?: string;
+  title_fr?: string;
+  title_ar?: string;
+  title_hi?: string;
+  // Summaries (8 languages, all optional)
   summary_zh?: string;
   summary_en?: string;
-  lead_zh?: string;
-  lead_en?: string;
+  summary_zh_tw?: string;
+  summary_ja?: string;
+  summary_es?: string;
+  summary_fr?: string;
+  summary_ar?: string;
+  summary_hi?: string;
+  // Content (8 languages, all optional)
   content_zh?: ContentBlock[];
   content_en?: ContentBlock[];
+  content_zh_tw?: ContentBlock[];
+  content_ja?: ContentBlock[];
+  content_es?: ContentBlock[];
+  content_fr?: ContentBlock[];
+  content_ar?: ContentBlock[];
+  content_hi?: ContentBlock[];
+  // Metadata
   category?: string;
   author?: string;
   image_url?: string;
-  image_caption_zh?: string;
-  image_caption_en?: string;
   tags?: string[];
   status?: 'draft' | 'published' | 'archived';
   published_at?: string;
@@ -260,6 +323,15 @@ async function apiFetch<T>(
     const data = await response.json();
 
     if (!response.ok) {
+      // Log detailed error information for debugging
+      console.error('❌ API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        method: options.method || 'GET',
+        responseData: data
+      });
+
       const error: ApiError = {
         detail: data.detail || `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
@@ -357,6 +429,13 @@ async function apiFetch<T>(
 
 export const articlesAPI = {
   /**
+   * Get featured articles (one latest from each category)
+   */
+  async getFeatured(): Promise<ArticleListItem[]> {
+    return apiFetch<ArticleListItem[]>('/articles/featured');
+  },
+
+  /**
    * Get list of articles with pagination and filters
    */
   async list(params?: {
@@ -368,7 +447,7 @@ export const articlesAPI = {
     exclude_id?: string;
   }): Promise<ArticleListResponse> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
     if (params?.category) queryParams.append('category', params.category);
@@ -513,7 +592,7 @@ export const appointmentsAPI = {
    */
   async getAvailableSlots(date: string): Promise<AvailableSlotsResponse> {
     return apiFetch<AvailableSlotsResponse>(
-      `/appointments/available-slots?date=${date}`,
+      `/appointments/available-slots?appointment_date=${date}`,
       {},
       false // Public endpoint
     );
@@ -866,7 +945,7 @@ export const authAPI = {
     return apiFetch<void>('/auth/logout', {
       method: 'POST',
       body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+    }, true); // requireAuth = true
   },
 
   /**
@@ -980,6 +1059,7 @@ export interface MultiLangTranslateRequest {
   text: string;
   source_lang?: SupportedLanguage;
   target_langs: SupportedLanguage[];
+  force_translate?: boolean;
 }
 
 /**
@@ -1071,6 +1151,12 @@ export async function batchTranslate(request: BatchTranslateRequest): Promise<Ba
 export async function translateToMultipleLanguages(
   request: MultiLangTranslateRequest
 ): Promise<MultiLangTranslateResponse> {
+  console.log('🌐 Calling translateToMultipleLanguages API:', {
+    url: `${API_BASE_URL}${API_VERSION}/translation/translate-multiple`,
+    request,
+    hasToken: !!getAuthToken()
+  });
+
   const response = await fetch(`${API_BASE_URL}${API_VERSION}/translation/translate-multiple`, {
     method: 'POST',
     headers: {
@@ -1080,12 +1166,21 @@ export async function translateToMultipleLanguages(
     body: JSON.stringify(request),
   });
 
+  console.log('📥 translateToMultipleLanguages response:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Multi-language translation failed' }));
-    throw new Error(error.detail || 'Multi-language translation failed');
+    console.error('❌ translateToMultipleLanguages error:', error);
+    throw new Error(error.detail || `Translation failed with status ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('✅ translateToMultipleLanguages result:', result);
+  return result;
 }
 
 /**
@@ -1098,51 +1193,78 @@ export interface UploadDocumentOptions {
   category?: string;
 }
 
+interface UploadUploadedImage {
+  original_name: string;
+  uploaded_url: string;
+  size: number;
+}
+
+interface UploadParseMetadata {
+  word_count: number;
+  paragraph_count: number;
+  image_count: number;
+  parse_time: number;
+  translation_time?: number | null;
+}
+
+interface UploadTranslationEntry {
+  title: string;
+  summary: string;
+  content: ContentBlock[];
+}
+
+interface UploadParseResult {
+  title: string;
+  summary: string;
+  category: string;
+  tags: string[];
+  content_zh: ContentBlock[];
+  images_uploaded: UploadUploadedImage[];
+  metadata: UploadParseMetadata;
+  translations?: Record<string, UploadTranslationEntry>;
+}
+
 export interface UploadDocumentResponse {
   upload_id: string;
   filename: string;
   file_type: string;
   file_size: number;
-  upload_status: string;
-  parse_result: {
-    title: string;
-    content_blocks: ContentBlock[];
-    images: Array<{
-      filename: string;
-      url: string;
-      alt?: string;
-    }>;
-    metadata: {
-      summary?: string;
-      category?: string;
-      tags?: string[];
-    };
-  };
-  uploaded_at: string;
+  status: string;
+  parse_result: UploadParseResult;
+  created_at: string;
 }
 
 export async function uploadDocument(
   file: File,
   options: UploadDocumentOptions = {}
 ): Promise<UploadDocumentResponse> {
+  console.log('📤 uploadDocument called with options:', options);
+
   const formData = new FormData();
   formData.append('file', file);
 
   if (options.auto_translate !== undefined) {
     formData.append('auto_translate', String(options.auto_translate));
+    console.log('  ✓ Added auto_translate:', options.auto_translate);
   }
 
   // T027: Support multiple target languages
   if (options.target_langs && options.target_langs.length > 0) {
-    formData.append('target_langs', options.target_langs.join(','));
+    const langsStr = options.target_langs.join(',');
+    formData.append('target_langs', langsStr);
+    console.log('  ✓ Added target_langs:', langsStr);
   } else if (options.target_lang) {
     // Backward compatibility
     formData.append('target_langs', options.target_lang);
+    console.log('  ✓ Added target_langs (legacy):', options.target_lang);
   }
 
   if (options.category) {
     formData.append('category', options.category);
+    console.log('  ✓ Added category:', options.category);
   }
+
+  console.log('📤 Sending request to:', `${API_BASE_URL}${API_VERSION}/documents/upload`);
 
   const response = await fetch(`${API_BASE_URL}${API_VERSION}/documents/upload`, {
     method: 'POST',
@@ -1152,12 +1274,19 @@ export async function uploadDocument(
     body: formData,
   });
 
+  console.log('📥 Response status:', response.status);
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Document upload failed' }));
+    console.error('❌ Upload failed:', error);
     throw new Error(error.detail || 'Document upload failed');
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('✅ Upload successful, result:', result);
+  console.log('  - translations:', result.parse_result?.translations);
+
+  return result;
 }
 
 /**

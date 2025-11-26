@@ -11,7 +11,7 @@ export function BusinessPage() {
       icon: Brain,
       title: t('business.neweconomy.ai'),
       description: t('business.neweconomy.ai.desc'),
-      returnRange: '25~35%',
+      returnRange: '8%~20%',
       color: '#3b5bdb',
       image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhcnRpZmljaWFsJTIwaW50ZWxsaWdlbmNlJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjAzNjQ2MDB8MA&ixlib=rb-4.1.0&q=80&w=1080'
     },
@@ -19,7 +19,7 @@ export function BusinessPage() {
       icon: Network,
       title: t('business.neweconomy.web3'),
       description: t('business.neweconomy.web3.desc'),
-      returnRange: '20~30%',
+      returnRange: '5%~10%',
       color: '#7c3aed',
       image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibG9ja2NoYWluJTIwY3J5cHRvY3VycmVuY3l8ZW58MXx8fHwxNzYwMzY0NjAwfDA&ixlib=rb-4.1.0&q=80&w=1080'
     },
@@ -27,7 +27,7 @@ export function BusinessPage() {
       icon: Wallet,
       title: t('business.neweconomy.fintech'),
       description: t('business.neweconomy.fintech.desc'),
-      returnRange: '18~28%',
+      returnRange: '3%~8%',
       color: '#059669',
       image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwYmFua2luZ3xlbnwxfHx8fDE3NjAzNjQ2MDB8MA&ixlib=rb-4.1.0&q=80&w=1080'
     }
@@ -38,7 +38,7 @@ export function BusinessPage() {
       icon: Factory,
       title: t('business.traditional.manufacturing'),
       description: t('business.traditional.manufacturing.desc'),
-      returnRange: '25~35%',
+      returnRange: '-5%~-8%',
       color: '#6b7280',
       image: 'https://images.unsplash.com/photo-1565688534245-05d6b5be184a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYW51ZmFjdHVyaW5nJTIwaW5kdXN0cnl8ZW58MXx8fHwxNzYwMzY0NjAwfDA&ixlib=rb-4.1.0&q=80&w=1080'
     },
@@ -46,7 +46,7 @@ export function BusinessPage() {
       icon: Building2,
       title: t('business.traditional.realestate'),
       description: t('business.traditional.realestate.desc'),
-      returnRange: '5~25%',
+      returnRange: '-5%~-10%',
       color: '#ea580c',
       image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWFsJTIwZXN0YXRlJTIwY29uc3RydWN0aW9ufGVufDF8fHx8MTc2MDM2NDYwMHww&ixlib=rb-4.1.0&q=80&w=1080'
     },
@@ -54,7 +54,7 @@ export function BusinessPage() {
       icon: Zap,
       title: t('business.traditional.energy'),
       description: t('business.traditional.energy.desc'),
-      returnRange: '-6~1%',
+      returnRange: '-4%~-8%',
       color: '#dc2626',
       image: 'https://images.unsplash.com/photo-1497440001374-f26997328c1b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0cmFkaXRpb25hbCUyMGVuZXJneSUyMG9pbHxlbnwxfHx8fDE3NjAzNjQ2MDB8MA&ixlib=rb-4.1.0&q=80&w=1080'
     }
@@ -91,7 +91,6 @@ export function BusinessPage() {
             <div>
               <div className="mb-12">
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.neweconomy.title')}</h2>
-                <p className="text-gray-400">{language.startsWith('zh') ? '行业增长引擎' : 'LEADING INDUSTRY'}</p>
               </div>
 
               <div className="space-y-6">
@@ -162,7 +161,6 @@ export function BusinessPage() {
             <div>
               <div className="mb-12">
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.traditional.title')}</h2>
-                <p className="text-gray-400">{language.startsWith('zh') ? '市场份额减少' : 'DECLINING AREA'}</p>
               </div>
 
               <div className="space-y-6">
@@ -236,30 +234,23 @@ export function BusinessPage() {
       <section className="py-20 px-8 border-t border-white/10">
         <div className="max-w-[1440px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Investment Strategy */}
-            <motion.div 
+            {/* Solutions */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="glass rounded-2xl p-10 hover:bg-white/5 transition-all duration-300"
             >
               <h3 className="text-3xl font-light text-white mb-6">
-                {language.startsWith('zh') ? '投资策略' : 'Investment Strategy'}
+                {t('business.strategy.title')}
               </h3>
-              <p className="text-gray-300 leading-relaxed mb-8">
-                {language.startsWith('zh')
-                  ? '我们采取多元化投资策略，在充分分析市场趋势和企业基本面的基础上，选择具有长期投资价值的企业。通过科学的风险评估和投后管理，最大化投资组合收益，同时控制风险敞口。我们注重与企业管理层的深度合作，不仅提供资金支持，更带来战略咨询和资源整合。'
-                  : 'We adopt a diversified investment strategy, selecting companies with long-term investment value based on thorough analysis of market trends and fundamentals. Through scientific risk assessment and post-investment management, we maximize portfolio returns while controlling risk exposure.'
-                }
+              <p className="text-gray-300 leading-relaxed">
+                {t('business.strategy.desc')}
               </p>
-              <button className="group flex items-center gap-2 text-[#00a4e4] hover:gap-3 transition-all">
-                <span>{language.startsWith('zh') ? '了解更多' : 'Learn More'}</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </motion.div>
 
             {/* Value Creation */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -267,18 +258,11 @@ export function BusinessPage() {
               className="glass rounded-2xl p-10 hover:bg-white/5 transition-all duration-300"
             >
               <h3 className="text-3xl font-light text-white mb-6">
-                {language.startsWith('zh') ? '价值创造' : 'Value Creation'}
+                {t('business.value.title')}
               </h3>
-              <p className="text-gray-300 leading-relaxed mb-8">
-                {language.startsWith('zh')
-                  ? '我们采用全方位的价值创造体系，从战略规划到运营优化，再到退出管理，全程参与被投企业的发展。通过整合产业资源和专业人才，帮助企业实现业务增长和市场突破。我们特别关注企业的可持续发展能力，推动管理创新和数字化转型，创造长期价值。'
-                  : 'We employ a comprehensive value creation system, participating in portfolio companies\' development from strategic planning to operational optimization and exit management. By integrating industry resources and professional talent, we help companies achieve business growth and market breakthroughs.'
-                }
+              <p className="text-gray-300 leading-relaxed">
+                {t('business.value.desc')}
               </p>
-              <button className="group flex items-center gap-2 text-[#00a4e4] hover:gap-3 transition-all">
-                <span>{language.startsWith('zh') ? '查看详情' : 'View Details'}</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </motion.div>
           </div>
         </div>

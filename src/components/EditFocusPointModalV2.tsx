@@ -28,12 +28,12 @@ export function EditFocusPointModalV2({ focusPoint, onSave, onClose, language }:
       return;
     }
 
-    if (!formData.title['zh'] || !formData.title['en']) {
+    if (!formData.title['zh-CN'] || !formData.title['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文标题' : 'Please fill in Chinese and English titles');
       return;
     }
 
-    if (!formData.summary['zh'] || !formData.summary['en']) {
+    if (!formData.summary['zh-CN'] || !formData.summary['en']) {
       alert(language.startsWith('zh') ? '请填写简体中文和英文摘要' : 'Please fill in Chinese and English summaries');
       return;
     }
@@ -95,7 +95,9 @@ export function EditFocusPointModalV2({ focusPoint, onSave, onClose, language }:
               onChange={(values) => setFormData({ ...formData, date: values })}
               type="text"
               placeholder="2025年11月2日 / Nov 2, 2025"
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Title (Multi-Language) */}
@@ -105,7 +107,9 @@ export function EditFocusPointModalV2({ focusPoint, onSave, onClose, language }:
               onChange={(values) => setFormData({ ...formData, title: values })}
               type="text"
               placeholder={language.startsWith('zh') ? '输入新闻标题' : 'Enter news title'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
+              theme="dark"
             />
 
             {/* Summary (Multi-Language) */}
@@ -115,8 +119,10 @@ export function EditFocusPointModalV2({ focusPoint, onSave, onClose, language }:
               onChange={(values) => setFormData({ ...formData, summary: values })}
               type="textarea"
               placeholder={language.startsWith('zh') ? '输入新闻摘要' : 'Enter news summary'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
+              expandedByDefault={false}
               rows={3}
+              theme="dark"
             />
 
             {/* Full Content (Multi-Language) */}
@@ -126,9 +132,10 @@ export function EditFocusPointModalV2({ focusPoint, onSave, onClose, language }:
               onChange={(values) => setFormData({ ...formData, fullContent: values })}
               type="textarea"
               placeholder={language.startsWith('zh') ? '输入完整新闻内容' : 'Enter full news content'}
-              requiredLangs={['zh', 'en']}
+              requiredLangs={['zh-CN', 'en']}
               rows={10}
               expandedByDefault={false}
+              theme="dark"
             />
           </div>
 

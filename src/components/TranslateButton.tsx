@@ -8,7 +8,22 @@ import { Languages, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // T032-T050: Support 8 languages
-type SupportedLanguage = 'zh' | 'zh-tw' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+type SupportedLanguage = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+
+// Helper function to convert frontend language codes to backend format
+const convertLangToBackend = (lang: string): string => {
+  const mapping: Record<string, string> = {
+    'zh-CN': 'zh',
+    'zh-TW': 'zh-tw',
+    'en': 'en',
+    'ja': 'ja',
+    'es': 'es',
+    'fr': 'fr',
+    'ar': 'ar',
+    'hi': 'hi',
+  };
+  return mapping[lang] || lang;
+};
 
 interface TranslateButtonProps {
   /** Text to translate */
@@ -59,18 +74,24 @@ export const TranslateButton: React.FC<TranslateButtonProps> = ({
       // Import API function dynamically to avoid circular dependencies
       const { translateText } = await import('../services/api');
 
+      // Convert frontend language codes to backend format
+      const backendSourceLang = sourceLang ? convertLangToBackend(sourceLang) : undefined;
+      const backendTargetLang = convertLangToBackend(targetLang);
+
       const textLength = text.trim().length;
       console.log('🔄 Translating:', {
         textLength,
-        sourceLang,
-        targetLang,
+        sourceLang: backendSourceLang,
+        targetLang: backendTargetLang,
+        originalSourceLang: sourceLang,
+        originalTargetLang: targetLang,
         textPreview: text.trim().substring(0, 100) + '...'
       });
 
       const result = await translateText({
         text: text.trim(),
-        source_lang: sourceLang,
-        target_lang: targetLang,
+        source_lang: backendSourceLang as any,
+        target_lang: backendTargetLang as any,
       });
 
       console.log('✅ Translation result:', {
@@ -92,8 +113,8 @@ export const TranslateButton: React.FC<TranslateButtonProps> = ({
 
       // Show success message (T032-T050: 8 languages)
       const langNames: Record<string, string> = {
-        zh: '简体中文',
-        'zh-tw': '繁体中文',
+        'zh-CN': '简体中文',
+        'zh-TW': '繁体中文',
         en: '英文',
         ja: '日语',
         es: '西班牙语',
@@ -127,9 +148,10 @@ export const TranslateButton: React.FC<TranslateButtonProps> = ({
       type="button"
       size={size}
       variant={variant}
-      className={className}
+      className={`${className} ${!text || text.trim().length === 0 ? 'opacity-60' : ''}`}
       onClick={handleTranslate}
-      disabled={disabled || isTranslating || !text || text.trim().length === 0}
+      disabled={disabled || isTranslating}
+      title={!text || text.trim().length === 0 ? '请先输入要翻译的文本' : ''}
     >
       {isTranslating ? (
         <>

@@ -3,7 +3,7 @@
  * T079-T081: Support 8 languages with auto-translation
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NEWS_CATEGORIES } from '../constants/newsCategories';
 import { ImageUploader } from './ImageUploader';
 import { TipTapEditor } from './TipTapEditor';
@@ -22,8 +22,8 @@ interface NewsCreateFormV2Props {
 
 // Multi-language content type
 type MultiLangContent = {
-  zh?: string;
-  'zh-tw'?: string;
+  'zh-CN'?: string;
+  'zh-TW'?: string;
   en?: string;
   ja?: string;
   es?: string;
@@ -48,83 +48,203 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
   onCancel,
   initialData
 }) => {
+  console.log('🚀 NewsCreateFormV2 rendered with initialData:', {
+    has_initialData: !!initialData,
+    has_parse_result: !!initialData?.parse_result,
+    initialData_keys: initialData ? Object.keys(initialData) : [],
+    parse_result_keys: initialData?.parse_result ? Object.keys(initialData.parse_result) : [],
+    translations_keys: initialData?.parse_result?.translations ? Object.keys(initialData.parse_result.translations) : []
+  });
+
   const { language, t } = useLanguage();
 
   // Helper function to convert content blocks to text
-  const contentBlocksToText = (blocks: any[]): string => {
-    if (!blocks || blocks.length === 0) return '';
+  const contentBlocksToText = (blocks: any[], debugLang?: string): string => {
+    if (!blocks || blocks.length === 0) {
+      console.log(`⚠️ contentBlocksToText [${debugLang || 'unknown'}] - No blocks provided:`, blocks);
+      return '';
+    }
 
-    return blocks.map(block => {
-      const getContent = () => block.content || block.text || '';
+    console.log(`📝 contentBlocksToText [${debugLang || 'unknown'}] - Processing ${blocks.length} blocks`);
+    console.log(`📝 First block [${debugLang || 'unknown'}]:`, JSON.stringify(blocks[0], null, 2));
+
+    const result = blocks.map((block, index) => {
+      // Try to get content from multiple possible fields
+      const getContent = () => {
+        // Priority: content > text > data
+        const content = block.content || block.text || block.data || '';
+        if (!content && index === 0) {
+          console.warn(`⚠️ Block ${index} [${debugLang || 'unknown'}] has no content:`, block);
+        }
+        return content;
+      };
+
+      const content = getContent();
+
+      // 详细日志，特别是对于 zh-TW
+      if (debugLang === 'zh-TW' && index < 3) {
+        console.log(`  🔍 Block ${index} [${debugLang}] - DETAILED:`, {
+          type: block.type,
+          content_length: content.length,
+          content_preview: content.substring(0, 100),
+          has_content_field: !!block.content,
+          has_text_field: !!block.text,
+          has_data_field: !!block.data,
+          full_block: block
+        });
+      } else {
+        console.log(`  Block ${index} [${debugLang || 'unknown'}] - type: ${block.type}, content length: ${content.length}`);
+      }
 
       if (block.type === 'heading') {
         const prefix = '#'.repeat(block.level || 1);
-        return `${prefix} ${getContent()}`;
+        return `${prefix} ${content}`;
       } else if (block.type === 'paragraph') {
-        return getContent();
+        return content;
       } else if (block.type === 'image') {
         const alt = block.alt || block.caption || '';
-        const url = block.url || getContent();
+        const url = block.url || content;
+        console.log(`📸 Image block [${debugLang || 'unknown'}]:`, {
+          has_url: !!block.url,
+          has_content: !!content,
+          url: url,
+          alt: alt,
+          full_block: block
+        });
         return `![${alt}](${url})`;
       } else if (block.type === 'code') {
         const lang = block.language || '';
-        return `\`\`\`${lang}\n${getContent()}\n\`\`\``;
+        return `\`\`\`${lang}\n${content}\n\`\`\``;
       } else if (block.type === 'quote') {
-        return `> ${getContent()}`;
+        return `> ${content}`;
       } else if (block.type === 'list') {
         if (block.items && Array.isArray(block.items)) {
           return block.items.map((item: string) => `- ${item}`).join('\n');
         }
-        const content = getContent();
         if (content.includes('\n')) {
           return content.split('\n').map((item: string) => `- ${item.trim()}`).join('\n');
         }
         return `- ${content}`;
       }
-      return getContent();
-    }).filter(text => text.trim()).join('\n\n');
+      return content;
+    }).filter(text => text && text.trim()).join('\n\n');
+
+    console.log(`✅ contentBlocksToText [${debugLang || 'unknown'}] - Result length: ${result.length}`);
+    console.log(`✅ contentBlocksToText [${debugLang || 'unknown'}] - Preview:`, result.substring(0, 200));
+
+    // 特别为 zh-TW 添加额外日志
+    if (debugLang === 'zh-TW') {
+      console.log(`🔍 zh-TW FINAL RESULT:`, {
+        length: result.length,
+        first_100_chars: result.substring(0, 100),
+        last_100_chars: result.substring(result.length - 100),
+        is_empty: !result || !result.trim()
+      });
+    }
+
+    return result;
   };
 
   // Initialize form data from uploaded document or empty
-  const getInitialFormData = (): FormData => {
+  const getInitialFormData = useCallback((): FormData => {
     if (initialData?.parse_result) {
       const { parse_result } = initialData;
-      
-      // Extract translations if available
-      const translations = initialData.translations || {};
+
+      console.log('🔍 Raw parse_result:', parse_result);
+      console.log('🔍 parse_result.translations:', parse_result.translations);
+
+      // Extract translations if available (from parse_result.translations)
+      const translations = parse_result.translations || {};
+
+      console.log('📄 Initializing form from uploaded document:', {
+        title: parse_result.title,
+        summary: parse_result.summary,
+        category: parse_result.category,
+        translations: Object.keys(translations),
+        translationData: translations,
+        translationsType: typeof translations,
+        translationsIsArray: Array.isArray(translations)
+      });
+
+      console.log('🔍 DETAILED translations object:', JSON.stringify(translations, null, 2));
+
+      // Debug: Log each translation's content
+      Object.entries(translations).forEach(([lang, data]: [string, any]) => {
+        console.log(`🌐 Translation for ${lang}:`, {
+          title: data.title?.substring(0, 50),
+          summary: data.summary?.substring(0, 50),
+          content: data.content ? `${data.content.length} blocks` : 'no content',
+          firstBlock: data.content?.[0],
+          fullData: data  // 打印完整数据以便调试
+        });
+      });
+
+      // Helper function to map backend language codes to frontend codes
+      const mapLangCode = (lang: string): string => {
+        if (lang === 'zh-tw') return 'zh-TW'; // Map 'zh-tw' to 'zh-TW'
+        if (lang === 'zh') return 'zh-CN'; // Map 'zh' to 'zh-CN'
+        return lang;
+      };
+
+      // 先构造简体中文内容，后面 zh-TW 兜底也会用到
+      const zhCNContent = contentBlocksToText(parse_result.content_zh || [], 'zh-CN');
+
+      // 从 translations 构造多语言内容
+      const translatedContentEntries = Object.entries(translations).map(([lang, data]: [string, any]) => {
+        console.log(`🔍 RAW translation entry: lang="${lang}", data keys:`, Object.keys(data));
+        const mappedLang = mapLangCode(lang);
+        console.log(`🔍 Processing translation for ${lang} -> ${mappedLang}:`, {
+          has_content: !!data.content,
+          content_type: typeof data.content,
+          content_is_array: Array.isArray(data.content),
+          content_length: data.content?.length,
+          raw_content: data.content
+        });
+
+        const contentText = data.content ? contentBlocksToText(data.content, mappedLang) : '';
+        console.log(`📝 Content for ${mappedLang}:`, {
+          blocks_count: data.content ? data.content.length : 0,
+          text_length: contentText.length,
+          text_preview: contentText.substring(0, 200)
+        });
+        return [mappedLang, contentText];
+      });
+
+      const content: MultiLangContent = {
+        'zh-CN': zhCNContent,
+        ...Object.fromEntries(translatedContentEntries)
+      };
+
+      // ★ 为 zh-TW 做兜底：如果后端没有返回 zh-tw，或者内容为空，就回退到 zh-CN
+      if (!content['zh-TW'] || !content['zh-TW']!.trim()) {
+        console.log('⚠️ zh-TW content is empty or missing, falling back to zh-CN');
+        content['zh-TW'] = zhCNContent;
+      }
 
       return {
         category: parse_result.category || 'headline',
         title: {
-          zh: parse_result.title || '',
+          'zh-CN': parse_result.title || '', // Use 'zh-CN' instead of 'zh'
           ...Object.fromEntries(
             Object.entries(translations).map(([lang, data]: [string, any]) => [
-              lang === 'zh-tw' ? 'zh-tw' : lang,
+              mapLangCode(lang),
               data.title || ''
             ])
           )
         },
         summary: {
-          zh: parse_result.summary || '',
+          'zh-CN': parse_result.summary || '', // Use 'zh-CN' instead of 'zh'
           ...Object.fromEntries(
             Object.entries(translations).map(([lang, data]: [string, any]) => [
-              lang === 'zh-tw' ? 'zh-tw' : lang,
+              mapLangCode(lang),
               data.summary || ''
             ])
           )
         },
         lead: {},
         author: '',
-        image_url: parse_result.images_uploaded?.[0]?.uploaded_url || '',
-        content: {
-          zh: contentBlocksToText(parse_result.content_zh || []),
-          ...Object.fromEntries(
-            Object.entries(translations).map(([lang, data]: [string, any]) => [
-              lang === 'zh-tw' ? 'zh-tw' : lang,
-              data.content_zh ? contentBlocksToText(data.content_zh) : ''
-            ])
-          )
-        },
+        image_url: '', // 不自动填充封面图片，让用户手动选择
+        content,
         status: 'draft'
       };
     }
@@ -139,25 +259,152 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
       content: {},
       status: 'draft'
     };
-  };
+  }, [initialData]);
 
-  const [formData, setFormData] = useState<FormData>(getInitialFormData());
+  console.log('🚀 NewsCreateFormV2 component rendering with initialData:', initialData);
+  console.log('🚀 Has parse_result?', !!initialData?.parse_result);
+  console.log('🚀 Calling getInitialFormData() for useState initialization...');
+
+  const [formData, setFormData] = useState<FormData>(() => {
+    const data = getInitialFormData();
+    console.log('🚀 useState initialized with formData:', data);
+    console.log('🚀 Content keys:', Object.keys(data.content));
+    console.log('🚀 Content lengths:', Object.entries(data.content).map(([k, v]) => `${k}: ${v?.length || 0}`));
+    console.log('🚀 zh-CN content length:', data.content['zh-CN']?.length || 0);
+    console.log('🚀 zh-TW content length:', data.content['zh-TW']?.length || 0);
+    console.log('🚀 zh-TW content preview:', data.content['zh-TW']?.substring(0, 100));
+    console.log('🚀 zh-TW content full:', data.content['zh-TW']);
+    return data;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
 
-  // Translation handler
+  // Update form data when initialData changes
+  useEffect(() => {
+    console.log('🔄 useEffect triggered, initialData:', initialData);
+    if (initialData?.parse_result) {
+      console.log('📄 initialData changed, updating form data:', initialData);
+
+      // Call getInitialFormData to get the latest data
+      const newFormData = getInitialFormData();
+
+      console.log('📝 New form data:', newFormData);
+      console.log('📝 Content fields:', newFormData.content);
+      console.log('📝 zh-TW content length:', newFormData.content['zh-TW']?.length || 0);
+      console.log('📝 zh-TW content preview:', newFormData.content['zh-TW']?.substring(0, 200));
+      setFormData(newFormData);
+    }
+  }, [initialData, getInitialFormData]);
+
+  // Helper function to translate a multi-language field
+  const translateField = async (
+    fieldName: string,
+    sourceText: string,
+    currentValues: MultiLangContent
+  ): Promise<MultiLangContent> => {
+    // Backend language codes (lowercase)
+    const targetLangs = ['en', 'zh-tw', 'ja', 'es', 'fr', 'ar', 'hi'];
+    // Frontend language codes (with proper casing)
+    const langCodeMap: Record<string, keyof MultiLangContent> = {
+      'en': 'en',
+      'zh-tw': 'zh-TW',
+      'ja': 'ja',
+      'es': 'es',
+      'fr': 'fr',
+      'ar': 'ar',
+      'hi': 'hi'
+    };
+
+    const translatedContent: MultiLangContent = { ...currentValues };
+
+    for (const targetLang of targetLangs) {
+      try {
+        const result = await translateText({
+          text: sourceText,
+          source_lang: 'zh',
+          target_lang: targetLang as any,
+        });
+
+        if (result.translated_text) {
+          const frontendLangCode = langCodeMap[targetLang];
+          translatedContent[frontendLangCode] = result.translated_text;
+          toast.success(`${fieldName} - ${targetLang.toUpperCase()} 翻译完成`);
+        }
+      } catch (error) {
+        console.error(`Translation to ${targetLang} failed:`, error);
+        toast.error(`${fieldName} - ${targetLang.toUpperCase()} 翻译失败`);
+      }
+    }
+
+    return translatedContent;
+  };
+
+  // Translate all fields (title, summary, content)
+  const handleTranslateAll = async () => {
+    const zhTitle = formData.title['zh-CN'];
+    const zhSummary = formData.summary['zh-CN'];
+    const zhContent = formData.content['zh-CN'];
+
+    if (!zhTitle || !zhTitle.trim()) {
+      toast.error('请先填写中文标题');
+      return;
+    }
+
+    setIsTranslatingAll(true);
+
+    try {
+      toast.info('开始翻译所有内容到其他语言...');
+
+      // Translate title
+      const translatedTitle = await translateField('标题', zhTitle, formData.title);
+      setFormData(prev => ({ ...prev, title: translatedTitle }));
+
+      // Translate summary if exists
+      if (zhSummary && zhSummary.trim()) {
+        const translatedSummary = await translateField('摘要', zhSummary, formData.summary);
+        setFormData(prev => ({ ...prev, summary: translatedSummary }));
+      }
+
+      // Translate content if exists
+      if (zhContent && zhContent.trim()) {
+        const translatedContent = await translateField('内容', zhContent, formData.content);
+        setFormData(prev => ({ ...prev, content: translatedContent }));
+      }
+
+      toast.success('所有内容翻译完成！');
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast.error('翻译失败，请重试');
+    } finally {
+      setIsTranslatingAll(false);
+    }
+  };
+
+  // Translation handler for content only
   const handleTranslateContent = async () => {
-    const zhContent = formData.content.zh;
+    const zhContent = formData.content['zh-CN'];
     if (!zhContent || !zhContent.trim()) {
       toast.error('请先填写中文内容');
       return;
     }
 
     setIsTranslating(true);
-    // Only translate to supported languages (excluding zh which is the source)
+    // Backend language codes (lowercase)
     const targetLangs = ['en', 'zh-tw', 'ja', 'es', 'fr', 'ar', 'hi'];
+    // Frontend language codes (with proper casing)
+    const langCodeMap: Record<string, keyof MultiLangContent> = {
+      'en': 'en',
+      'zh-tw': 'zh-TW',
+      'ja': 'ja',
+      'es': 'es',
+      'fr': 'fr',
+      'ar': 'ar',
+      'hi': 'hi'
+    };
+
     const translatedContent: MultiLangContent = { ...formData.content };
 
     try {
@@ -173,7 +420,8 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
           });
 
           if (result.translated_text) {
-            translatedContent[targetLang as keyof MultiLangContent] = result.translated_text;
+            const frontendLangCode = langCodeMap[targetLang];
+            translatedContent[frontendLangCode] = result.translated_text;
             toast.success(`${targetLang.toUpperCase()} 翻译完成`);
           }
         } catch (error) {
@@ -284,11 +532,11 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
       newErrors.category = t('news.errors.categoryRequired');
     }
 
-    if (!formData.title.zh?.trim()) {
+    if (!formData.title['zh-CN']?.trim()) {
       newErrors.title_zh = t('news.errors.titleRequired');
     }
 
-    if (!formData.content.zh?.trim()) {
+    if (!formData.content['zh-CN']?.trim()) {
       newErrors.content_zh = t('news.errors.contentRequired');
     }
 
@@ -310,36 +558,73 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
     setSubmitError(null);
 
     try {
+      // Helper function to convert empty strings to undefined
+      const emptyToUndefined = (value: string | undefined): string | undefined => {
+        const trimmed = value?.trim();
+        return trimmed && trimmed.length > 0 ? trimmed : undefined;
+      };
+
+      // Helper function to provide fallback for required fields
+      const getFallbackValue = (value: string | undefined, fallback: string): string => {
+        const trimmed = value?.trim();
+        return trimmed && trimmed.length > 0 ? trimmed : fallback;
+      };
+
+      // Debug: Log form data before creating article
+      console.log('📝 Form data before creating article:', {
+        content_zh_CN: formData.content['zh-CN']?.substring(0, 100),
+        content_zh_TW: formData.content['zh-TW']?.substring(0, 100),
+        content_en: formData.content.en?.substring(0, 100),
+        content_ja: formData.content.ja?.substring(0, 100),
+        content_es: formData.content.es?.substring(0, 100),
+        content_fr: formData.content.fr?.substring(0, 100),
+        content_ar: formData.content.ar?.substring(0, 100),
+        content_hi: formData.content.hi?.substring(0, 100),
+      });
+
       const articleData: ArticleCreate = {
         category: formData.category,
-        title_zh: formData.title.zh?.trim() || '',
-        title_zh_tw: formData.title['zh-tw']?.trim() || '',
-        title_en: formData.title.en?.trim() || '',
-        title_ja: formData.title.ja?.trim() || '',
-        title_es: formData.title.es?.trim() || '',
-        title_fr: formData.title.fr?.trim() || '',
-        title_ar: formData.title.ar?.trim() || '',
-        title_hi: formData.title.hi?.trim() || '',
-        summary_zh: formData.summary.zh?.trim() || '',
-        summary_zh_tw: formData.summary['zh-tw']?.trim() || '',
-        summary_en: formData.summary.en?.trim() || '',
-        summary_ja: formData.summary.ja?.trim() || '',
-        summary_es: formData.summary.es?.trim() || '',
-        summary_fr: formData.summary.fr?.trim() || '',
-        summary_ar: formData.summary.ar?.trim() || '',
-        summary_hi: formData.summary.hi?.trim() || '',
-        content_zh: textToContentBlocks(formData.content.zh || ''),
-        content_zh_tw: textToContentBlocks(formData.content['zh-tw'] || ''),
-        content_en: textToContentBlocks(formData.content.en || ''),
-        content_ja: textToContentBlocks(formData.content.ja || ''),
-        content_es: textToContentBlocks(formData.content.es || ''),
-        content_fr: textToContentBlocks(formData.content.fr || ''),
-        content_ar: textToContentBlocks(formData.content.ar || ''),
-        content_hi: textToContentBlocks(formData.content.hi || ''),
+        title_zh: formData.title['zh-CN']?.trim() || '',
+        title_zh_tw: emptyToUndefined(formData.title['zh-TW']),
+        title_en: getFallbackValue(formData.title.en, formData.title['zh-CN']?.trim() || ''),
+        title_ja: emptyToUndefined(formData.title.ja),
+        title_es: emptyToUndefined(formData.title.es),
+        title_fr: emptyToUndefined(formData.title.fr),
+        title_ar: emptyToUndefined(formData.title.ar),
+        title_hi: emptyToUndefined(formData.title.hi),
+        summary_zh: formData.summary['zh-CN']?.trim() || '',
+        summary_zh_tw: emptyToUndefined(formData.summary['zh-TW']),
+        summary_en: getFallbackValue(formData.summary.en, formData.summary['zh-CN']?.trim() || ''),
+        summary_ja: emptyToUndefined(formData.summary.ja),
+        summary_es: emptyToUndefined(formData.summary.es),
+        summary_fr: emptyToUndefined(formData.summary.fr),
+        summary_ar: emptyToUndefined(formData.summary.ar),
+        summary_hi: emptyToUndefined(formData.summary.hi),
+        content_zh: textToContentBlocks(formData.content['zh-CN'] || ''),
+        content_zh_tw: formData.content['zh-TW']?.trim() ? textToContentBlocks(formData.content['zh-TW']) : undefined,
+        content_en: formData.content.en?.trim() ? textToContentBlocks(formData.content.en) : textToContentBlocks(formData.content['zh-CN'] || ''),
+        content_ja: formData.content.ja?.trim() ? textToContentBlocks(formData.content.ja) : undefined,
+        content_es: formData.content.es?.trim() ? textToContentBlocks(formData.content.es) : undefined,
+        content_fr: formData.content.fr?.trim() ? textToContentBlocks(formData.content.fr) : undefined,
+        content_ar: formData.content.ar?.trim() ? textToContentBlocks(formData.content.ar) : undefined,
+        content_hi: formData.content.hi?.trim() ? textToContentBlocks(formData.content.hi) : undefined,
         author: formData.author.trim() || '匿名',
         image_url: formData.image_url || undefined,
         status: status
       };
+
+      // Debug: Log article data to be sent to API
+      console.log('📤 Article data to be sent to API:', {
+        ...articleData,
+        content_zh: articleData.content_zh?.length + ' blocks',
+        content_zh_tw: articleData.content_zh_tw ? articleData.content_zh_tw.length + ' blocks' : 'undefined',
+        content_en: articleData.content_en?.length + ' blocks',
+        content_ja: articleData.content_ja ? articleData.content_ja.length + ' blocks' : 'undefined',
+        content_es: articleData.content_es ? articleData.content_es.length + ' blocks' : 'undefined',
+        content_fr: articleData.content_fr ? articleData.content_fr.length + ' blocks' : 'undefined',
+        content_ar: articleData.content_ar ? articleData.content_ar.length + ' blocks' : 'undefined',
+        content_hi: articleData.content_hi ? articleData.content_hi.length + ' blocks' : 'undefined',
+      });
 
       await articlesAPI.create(articleData);
       toast.success(status === 'published' ? t('news.publishSuccess') : t('news.draftSaved'));
@@ -388,8 +673,8 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
                 className="form-select"
               >
                 {NEWS_CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
+                  <option key={cat.value} value={cat.value}>
+                    {language === 'zh' ? `${cat.labelEn} / ${cat.labelZh}` : cat.labelEn}
                   </option>
                 ))}
               </select>
@@ -431,8 +716,9 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
                 onChange={(values) => setFormData({ ...formData, title: values })}
                 type="text"
                 placeholder={t('news.title')}
-                requiredLangs={['zh']}
+                requiredLangs={['zh-CN']}
                 expandedByDefault={false}
+                theme="light"
               />
               {errors.title_zh && <span className="error-text">{errors.title_zh}</span>}
             </div>
@@ -445,9 +731,10 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
                 onChange={(values) => setFormData({ ...formData, summary: values })}
                 type="textarea"
                 placeholder={t('news.summary')}
-                requiredLangs={['zh']}
+                requiredLangs={['zh-CN']}
                 expandedByDefault={false}
                 rows={3}
+                theme="light"
               />
             </div>
 
@@ -460,7 +747,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
                 <button
                   type="button"
                   onClick={handleTranslateContent}
-                  disabled={isTranslating || !formData.content.zh}
+                  disabled={isTranslating || !formData.content['zh-CN']}
                   className="btn btn-sm btn-outline flex items-center gap-2"
                   title="将中文内容翻译到其他语言"
                 >
@@ -482,10 +769,10 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
               <div className="space-y-4">
                 {/* Chinese Content (Primary) */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">简体中文 *</div>
+                  <div className="text-xs font-medium text-gray-900">简体中文 *</div>
                   <TipTapEditor
-                    value={formData.content.zh || ''}
-                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, zh: value } })}
+                    value={formData.content['zh-CN'] || ''}
+                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, 'zh-CN': value } })}
                     placeholder={t('news.content')}
                     minHeight="400px"
                     onImageUpload={async (file) => {
@@ -498,7 +785,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* English */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">English</div>
+                  <div className="text-xs font-medium text-gray-900">English</div>
                   <TipTapEditor
                     value={formData.content.en || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, en: value } })}
@@ -513,22 +800,33 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* Traditional Chinese */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">繁體中文</div>
-                  <TipTapEditor
-                    value={formData.content['zh-TW'] || ''}
-                    onChange={(value) => setFormData({ ...formData, content: { ...formData.content, 'zh-TW': value } })}
-                    placeholder="繁體中文內容"
-                    minHeight="300px"
-                    onImageUpload={async (file) => {
-                      const url = await uploadImage(file);
-                      return url;
-                    }}
-                  />
+                  <div className="text-xs font-medium text-gray-900">繁體中文</div>
+                  {(() => {
+                    const zhTWValue = formData.content['zh-TW'] || '';
+                    console.log('🎯 Rendering zh-TW TipTapEditor:', {
+                      value_length: zhTWValue.length,
+                      value_preview: zhTWValue.substring(0, 200),
+                      formData_content_keys: Object.keys(formData.content),
+                      all_content_lengths: Object.entries(formData.content).map(([k, v]) => `${k}: ${v?.length || 0}`)
+                    });
+                    return (
+                      <TipTapEditor
+                        value={zhTWValue}
+                        onChange={(value) => setFormData({ ...formData, content: { ...formData.content, 'zh-TW': value } })}
+                        placeholder="繁體中文內容"
+                        minHeight="300px"
+                        onImageUpload={async (file) => {
+                          const url = await uploadImage(file);
+                          return url;
+                        }}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Japanese */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">日本語</div>
+                  <div className="text-xs font-medium text-gray-900">日本語</div>
                   <TipTapEditor
                     value={formData.content.ja || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, ja: value } })}
@@ -543,7 +841,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* Spanish */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">Español</div>
+                  <div className="text-xs font-medium text-gray-900">Español</div>
                   <TipTapEditor
                     value={formData.content.es || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, es: value } })}
@@ -558,7 +856,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* French */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">Français</div>
+                  <div className="text-xs font-medium text-gray-900">Français</div>
                   <TipTapEditor
                     value={formData.content.fr || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, fr: value } })}
@@ -573,7 +871,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* Arabic */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">العربية</div>
+                  <div className="text-xs font-medium text-gray-900">العربية</div>
                   <TipTapEditor
                     value={formData.content.ar || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, ar: value } })}
@@ -588,7 +886,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
                 {/* Hindi */}
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-700">हिन्दी</div>
+                  <div className="text-xs font-medium text-gray-900">हिन्दी</div>
                   <TipTapEditor
                     value={formData.content.hi || ''}
                     onChange={(value) => setFormData({ ...formData, content: { ...formData.content, hi: value } })}
@@ -607,44 +905,70 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
         {/* Footer */}
         <div className="form-footer">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="btn btn-secondary"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubmit('draft')}
-            disabled={isSubmitting}
-            className="btn btn-outline"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                {t('news.saveAsDraft')}...
-              </>
-            ) : (
-              t('news.saveAsDraft')
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubmit('published')}
-            disabled={isSubmitting}
-            className="btn btn-primary"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                {t('news.publish')}...
-              </>
-            ) : (
-              t('news.publish')
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isSubmitting || isTranslatingAll}
+              className="btn btn-secondary"
+            >
+              {t('common.cancel')}
+            </button>
+
+            {/* Translate All Button */}
+            <button
+              type="button"
+              onClick={handleTranslateAll}
+              disabled={isSubmitting || isTranslatingAll || !formData.title['zh-CN']}
+              className="btn btn-outline flex items-center gap-2"
+              title="一键翻译标题、摘要和内容到其他7种语言"
+            >
+              {isTranslatingAll ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  翻译中...
+                </>
+              ) : (
+                <>
+                  <Languages className="w-4 h-4" />
+                  一键翻译全部
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleSubmit('draft')}
+              disabled={isSubmitting || isTranslatingAll}
+              className="btn btn-outline"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                  {t('news.saveAsDraft')}...
+                </>
+              ) : (
+                t('news.saveAsDraft')
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSubmit('published')}
+              disabled={isSubmitting || isTranslatingAll}
+              className="btn btn-primary"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                  {t('news.publish')}...
+                </>
+              ) : (
+                t('news.publish')
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -673,6 +997,36 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
           display: flex;
           flex-direction: column;
           box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Force dark text color for all labels and text in the form */
+        .news-create-form-container label,
+        .news-create-form-container .form-label,
+        .news-create-form-container .text-gray-900,
+        .news-create-form-container .text-gray-800,
+        .news-create-form-container div[class*="text-gray"] {
+          color: #111827 !important;
+        }
+
+        /* Force dark text for inputs and always show border */
+        .news-create-form-container input,
+        .news-create-form-container textarea,
+        .news-create-form-container select {
+          color: #111827 !important;
+          background-color: #ffffff !important;
+          border: 1px solid #d1d5db !important;
+        }
+
+        /* Dropdown options */
+        .news-create-form-container select option {
+          color: #111827 !important;
+          background-color: #ffffff !important;
+        }
+
+        /* Placeholder text should be gray */
+        .news-create-form-container input::placeholder,
+        .news-create-form-container textarea::placeholder {
+          color: #9ca3af !important;
         }
 
         .form-header {
@@ -734,17 +1088,36 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
         .form-textarea {
           width: 100%;
           padding: 10px 12px;
-          border: 1px solid #d1d5db;
+          border: 1px solid #d1d5db !important;
           border-radius: 6px;
           font-size: 14px;
           transition: all 0.2s;
-          color: #111827;
-          background-color: #ffffff;
+          color: #111827 !important;
+          background-color: #ffffff !important;
+        }
+
+        /* Dropdown options - force dark text on white background */
+        .form-select option {
+          color: #111827 !important;
+          background-color: #ffffff !important;
+          padding: 8px 12px;
+        }
+
+        /* Additional specificity for select options */
+        .news-create-form-container select option {
+          color: #111827 !important;
+          background-color: #ffffff !important;
+        }
+
+        /* Ensure select dropdown is visible */
+        .news-create-form-container select {
+          color: #111827 !important;
+          background-color: #ffffff !important;
         }
 
         .form-input::placeholder,
         .form-textarea::placeholder {
-          color: #9ca3af;
+          color: #9ca3af !important;
           opacity: 1;
         }
 
@@ -752,7 +1125,7 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
         .form-select:focus,
         .form-textarea:focus {
           outline: none;
-          border-color: #00a4e4;
+          border-color: #00a4e4 !important;
           box-shadow: 0 0 0 3px rgba(0, 164, 228, 0.1);
         }
 
@@ -765,7 +1138,8 @@ export const NewsCreateFormV2: React.FC<NewsCreateFormV2Props> = ({
 
         .form-footer {
           display: flex;
-          justify-content: flex-end;
+          justify-content: space-between;
+          align-items: center;
           gap: 12px;
           padding: 16px 24px;
           border-top: 1px solid #e5e7eb;

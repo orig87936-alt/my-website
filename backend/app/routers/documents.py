@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from pathlib import Path
 import time
+import asyncio
 from datetime import datetime
 
 from ..database import get_db
@@ -102,6 +103,13 @@ async def upload_document(
     """
     start_time = time.time()
 
+    # 🔍 调试：打印接收到的参数
+    print(f"📥 Upload request received:")
+    print(f"  - filename: {file.filename}")
+    print(f"  - category: {category}")
+    print(f"  - auto_translate: {auto_translate}")
+    print(f"  - target_langs: {target_langs}")
+
     # 验证文件名
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -149,12 +157,32 @@ async def upload_document(
         
         # 2. 上传图片（如果有）
         uploaded_images = []
+        image_url_map = {}  # {filename: uploaded_url}
         if images:
             # 获取认证 token - 从 credentials 获取
             auth_token = credentials.credentials
             uploaded_images = await upload_images_concurrently(images, auth_token, max_concurrent=5)
+
+            # 创建文件名到 URL 的映射
+            for img in uploaded_images:
+                if 'error' not in img:
+                    image_url_map[img['original_name']] = img['uploaded_url']
+
+            print(f"📊 图片 URL 映射: {image_url_map}")
+
+            # 3. 替换 content_blocks 中的图片文件名为 URL
+            for block in content_blocks:
+                if block.type == 'image':
+                    # 检查 url 字段
+                    if block.url and block.url in image_url_map:
+                        old_url = block.url
+                        block.url = image_url_map[block.url]
+                        print(f"  🔄 替换图片 URL: {old_url} -> {block.url}")
+                    # 也更新 content 字段（如果存在）
+                    if block.content and block.content in image_url_map:
+                        block.content = image_url_map[block.content]
         
-        # 3. 生成 AI 元数据
+        # 4. 生成 AI 元数据
         metadata_generator = MetadataGenerator()
         
         # 提取纯文本内容
@@ -190,9 +218,12 @@ async def upload_document(
             if target_langs_list:
                 translations = {}
 
-                # 为每种目标语言翻译
-                for target_lang in target_langs_list:
+                # 定义单个语言的翻译任务
+                async def translate_to_language(target_lang: str):
+                    """翻译到单个目标语言（并发执行）"""
                     try:
+                        print(f"🌐 开始翻译到 {target_lang}...")
+
                         # 翻译标题
                         title_result = await translation_service.translate_text(
                             text=final_title,
@@ -209,48 +240,103 @@ async def upload_document(
                         )
                         translated_summary = summary_result['translated_text']
 
-                        # 翻译所有文本块
-                        translated_blocks = []
-                        for i, block in enumerate(content_blocks):
-                            if block.type in ['paragraph', 'heading', 'quote', 'list'] and block.content:
+                        # 翻译所有文本块（并发）
+                        async def translate_block(i: int, block: ContentBlock):
+                            """翻译单个内容块"""
+                            # 获取文本内容（优先使用 content，然后 text）
+                            text_to_translate = block.content or block.text
+
+                            if block.type in ['paragraph', 'heading', 'quote', 'list'] and text_to_translate:
                                 try:
+                                    print(f"🔄 Translating block {i+1} [{target_lang}]: {text_to_translate[:50]}...")
+
                                     translation_result = await translation_service.translate_text(
-                                        text=block.content,
+                                        text=text_to_translate,
                                         source_lang='zh',
                                         target_lang=target_lang
                                     )
                                     translated_text = translation_result['translated_text']
 
-                                    translated_blocks.append(ContentBlock(
+                                    # 调试：打印翻译结果
+                                    print(f"🔍 Block {i+1} [{target_lang}] translation result:")
+                                    print(f"  - Original ({len(text_to_translate)} chars): {text_to_translate[:50]}...")
+                                    print(f"  - Translated ({len(translated_text) if translated_text else 0} chars): {translated_text[:50] if translated_text else 'EMPTY'}...")
+                                    print(f"  - Translation result type: {type(translated_text)}")
+                                    print(f"  - Translation result repr: {repr(translated_text[:100]) if translated_text else 'None'}")
+
+                                    # 如果翻译结果为空，使用原文
+                                    if not translated_text or not translated_text.strip():
+                                        print(f"⚠️ WARNING: Translation returned empty for block {i+1} [{target_lang}], using original text")
+                                        translated_text = text_to_translate
+
+                                    # 同时设置 content 和 text 字段以确保兼容性
+                                    return ContentBlock(
                                         type=block.type,
-                                        content=translated_text,
+                                        content=translated_text,  # 保持向后兼容
+                                        text=translated_text,     # 新的标准字段
                                         level=block.level,
                                         language=block.language,
                                         caption=block.caption
-                                    ))
+                                    )
                                 except Exception as e:
                                     print(f"⚠️ Translation failed for block {i+1} in {target_lang}: {e}")
-                                    translated_blocks.append(block)
+                                    print(f"⚠️ Using original text for block {i+1}")
+                                    # 翻译失败时返回原文
+                                    return ContentBlock(
+                                        type=block.type,
+                                        content=text_to_translate,
+                                        text=text_to_translate,
+                                        level=block.level,
+                                        language=block.language,
+                                        caption=block.caption
+                                    )
                             else:
                                 # 非文本块（如图片、代码）直接复制
-                                translated_blocks.append(block)
+                                return block
+
+                        # 并发翻译所有内容块
+                        translated_blocks = await asyncio.gather(
+                            *[translate_block(i, block) for i, block in enumerate(content_blocks)]
+                        )
 
                         # 存储该语言的翻译结果
-                        translations[target_lang] = {
+                        result = {
                             'title': translated_title,
                             'summary': translated_summary,
                             'content': [block.model_dump() for block in translated_blocks]
                         }
 
                         print(f"✅ Translation completed for {target_lang}")
+                        return (target_lang, result)
 
                     except Exception as e:
+                        # 语言级别的翻译失败时，不要丢弃整个语言
+                        # 使用原始中文标题/摘要/内容作为兜底，这样前端至少有内容可用
                         print(f"⚠️ Translation failed for {target_lang}: {e}")
-                        # 继续翻译其他语言
-                        continue
+                        print(f"⚠️ Using original Chinese content as fallback for {target_lang}")
+
+                        fallback_result = {
+                            'title': final_title,
+                            'summary': final_summary,
+                            'content': [block.model_dump() for block in content_blocks]
+                        }
+                        return (target_lang, fallback_result)
+
+                # 并发翻译所有目标语言
+                translation_results = await asyncio.gather(
+                    *[translate_to_language(lang) for lang in target_langs_list],
+                    return_exceptions=True
+                )
+
+                # 收集成功的翻译结果（现在所有语言都会返回一个 result，只是可能是兜底的中文）
+                for result in translation_results:
+                    if isinstance(result, tuple) and result[1] is not None:
+                        target_lang, translation_data = result
+                        translations[target_lang] = translation_data
 
             translation_time = time.time() - translation_start
-        
+            print(f"📊 Translation results: {list(translations.keys()) if translations else 'None'}")
+
         # 5. 构建解析结果
         parse_metadata = ParseMetadata(
             word_count=metadata.get('word_count', 0),
@@ -276,6 +362,8 @@ async def upload_document(
             metadata=parse_metadata,
             translations=translations  # T023: 添加多语言翻译结果
         )
+
+        print(f"📦 ParseResult created with translations: {parse_result_schema.translations is not None}")
         
         # 6. 更新上传记录
         upload_record.upload_status = 'success'

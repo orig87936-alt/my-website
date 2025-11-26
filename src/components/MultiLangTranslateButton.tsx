@@ -8,7 +8,7 @@ import { Languages, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Language } from '../i18n/translations';
 
-type SupportedLanguage = 'zh' | 'zh-tw' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
+type SupportedLanguage = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'es' | 'fr' | 'ar' | 'hi';
 
 interface MultiLangTranslateButtonProps {
   /** Text to translate */
@@ -28,6 +28,36 @@ interface MultiLangTranslateButtonProps {
   /** Button text */
   buttonText?: string;
 }
+
+// Helper function to convert frontend language codes to backend format
+const convertLangToBackend = (lang: string): string => {
+  const mapping: Record<string, string> = {
+    'zh-CN': 'zh',
+    'zh-TW': 'zh-tw',
+    'en': 'en',
+    'ja': 'ja',
+    'es': 'es',
+    'fr': 'fr',
+    'ar': 'ar',
+    'hi': 'hi',
+  };
+  return mapping[lang] || lang;
+};
+
+// Helper function to convert backend language codes to frontend format
+const convertLangToFrontend = (lang: string): string => {
+  const mapping: Record<string, string> = {
+    'zh': 'zh-CN',
+    'zh-tw': 'zh-TW',
+    'en': 'en',
+    'ja': 'ja',
+    'es': 'es',
+    'fr': 'fr',
+    'ar': 'ar',
+    'hi': 'hi',
+  };
+  return mapping[lang] || lang;
+};
 
 export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> = ({
   text,
@@ -60,10 +90,15 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
       // Import API function dynamically
       const { translateToMultipleLanguages } = await import('../services/api');
 
+      // Convert frontend language codes to backend format
+      const backendSourceLang = sourceLang ? convertLangToBackend(sourceLang) : undefined;
+      const backendTargetLangs = targetLangs.map(convertLangToBackend);
+
       console.log('🌐 Multi-language translation:', {
         textLength: text.trim().length,
-        sourceLang,
-        targetLangs,
+        sourceLang: backendSourceLang,
+        targetLangs: backendTargetLangs,
+        originalTargetLangs: targetLangs,
         textPreview: text.trim().substring(0, 100) + '...'
       });
 
@@ -76,26 +111,31 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
 
       const result = await translateToMultipleLanguages({
         text: text.trim(),
-        source_lang: sourceLang,
-        target_langs: targetLangs,
+        source_lang: backendSourceLang,
+        target_langs: backendTargetLangs,
+        force_translate: true,  // 强制翻译，即使检测到的语言与目标语言相同
       });
 
       console.log('✅ Multi-language translation result:', {
         totalLangs: result.total_langs,
         successCount: result.success_count,
         failedCount: result.failed_count,
+        results: result.results,
       });
 
       // Update progress and collect successful translations
+      // Convert backend language codes back to frontend format
       const translations: Record<string, string> = {};
       const updatedProgress: Record<string, 'pending' | 'success' | 'error'> = {};
 
-      Object.entries(result.results).forEach(([lang, langResult]) => {
+      Object.entries(result.results).forEach(([backendLang, langResult]) => {
+        const frontendLang = convertLangToFrontend(backendLang);
+
         if (langResult.translated_text) {
-          translations[lang] = langResult.translated_text;
-          updatedProgress[lang] = 'success';
+          translations[frontendLang] = langResult.translated_text;
+          updatedProgress[frontendLang] = 'success';
         } else {
-          updatedProgress[lang] = 'error';
+          updatedProgress[frontendLang] = 'error';
         }
       });
 
@@ -108,8 +148,8 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
 
       // Show result message
       const langNames: Record<string, string> = {
-        zh: '简体中文',
-        'zh-tw': '繁体中文',
+        'zh-CN': '简体中文',
+        'zh-TW': '繁体中文',
         en: '英文',
         ja: '日语',
         es: '西班牙语',
@@ -127,8 +167,21 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
       }
     } catch (error: any) {
       console.error('❌ Multi-language translation error:', error);
-      toast.error(error.message || '批量翻译失败，请重试');
-      
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        response: error.response
+      });
+
+      // Better error message
+      let errorMessage = '批量翻译失败，请重试';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+
       // Mark all as error
       const errorProgress: Record<string, 'pending' | 'success' | 'error'> = {};
       targetLangs.forEach(lang => {
@@ -151,18 +204,21 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
       <button
         type="button"
         onClick={handleTranslate}
-        disabled={disabled || isTranslating || !text?.trim()}
+        disabled={isTranslating}
         className={`
           inline-flex items-center gap-2 rounded-lg font-medium
           transition-all duration-200
           ${sizeClasses[size]}
           ${
-            disabled || isTranslating || !text?.trim()
+            isTranslating
               ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : !text?.trim()
+              ? 'bg-[#00a4e4]/50 hover:bg-[#00a4e4]/70 text-white/80 shadow-sm hover:shadow-md'
               : 'bg-[#00a4e4] hover:bg-[#0090cc] text-white shadow-sm hover:shadow-md'
           }
           ${className}
         `}
+        title={!text?.trim() ? '请先输入要翻译的文本' : ''}
       >
         {isTranslating ? (
           <>
@@ -182,8 +238,8 @@ export const MultiLangTranslateButton: React.FC<MultiLangTranslateButtonProps> =
         <div className="flex items-center gap-1">
           {Object.entries(progress).map(([lang, status]) => {
             const langNames: Record<string, string> = {
-              zh: '简',
-              'zh-tw': '繁',
+              'zh-CN': '简',
+              'zh-TW': '繁',
               en: 'EN',
               ja: '日',
               es: 'ES',

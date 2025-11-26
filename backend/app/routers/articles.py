@@ -1,7 +1,7 @@
 """
 Article API routes
 """
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +22,33 @@ import math
 
 
 router = APIRouter(prefix="/articles", tags=["Articles"])
+
+
+@router.get("/featured", response_model=List[ArticleListItem], summary="Get featured articles (latest from each category)")
+async def get_featured_articles(
+    db: AsyncSession = Depends(get_db)
+) -> List[ArticleListItem]:
+    """
+    Get featured articles - one latest published article from each category
+
+    Returns up to 6 articles (one from each category: headline, regulatory, analysis, business, enterprise, outlook)
+    Used for the news page featured section.
+    """
+    categories = ['headline', 'regulatory', 'analysis', 'business', 'enterprise', 'outlook']
+    featured_articles = []
+
+    for category in categories:
+        articles, _ = await article_service.get_articles(
+            db=db,
+            page=1,
+            page_size=1,
+            category=category,
+            status='published'
+        )
+        if articles:
+            featured_articles.append(ArticleListItem.model_validate(articles[0]))
+
+    return featured_articles
 
 
 @router.get("", response_model=ArticleListResponse, summary="Get articles list")

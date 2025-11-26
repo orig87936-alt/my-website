@@ -27,6 +27,20 @@ interface DocumentPreviewPanelProps {
         language?: string;
         caption?: string;
       }>;
+      translations?: {
+        [lang: string]: {
+          title: string;
+          summary: string;
+          content: Array<{
+            type: string;
+            content?: string;
+            text?: string;
+            level?: number;
+            language?: string;
+            caption?: string;
+          }>;
+        };
+      };
       images_uploaded: Array<{
         original_name: string;
         uploaded_url: string;
@@ -45,24 +59,73 @@ interface DocumentPreviewPanelProps {
 
 const DocumentPreviewPanel: React.FC<DocumentPreviewPanelProps> = ({ result }) => {
   const { parse_result } = result;
-  const { title, summary, category, tags, content_zh, content_en, images_uploaded, metadata } = parse_result;
+  const { title, summary, category, tags, content_zh, content_en, translations, images_uploaded, metadata } = parse_result;
 
   const content_blocks = content_zh || [];
-  const hasTranslation = content_en && content_en.length > 0;
+  const hasTranslation = (content_en && content_en.length > 0) || (translations && Object.keys(translations).length > 0);
+
+  // Get list of translated languages
+  const translatedLanguages = translations ? Object.keys(translations) : [];
+
+  // Language name mapping
+  const languageNames: { [key: string]: string } = {
+    'en': '英语',
+    'zh-tw': '繁体中文',
+    'ja': '日语',
+    'es': '西班牙语',
+    'fr': '法语',
+    'ar': '阿拉伯语',
+    'hi': '印地语'
+  };
 
   return (
     <div className="space-y-6">
       {/* Success Message */}
       <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
         <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-green-400">文档解析成功</p>
           <p className="text-xs text-gray-400">
             已提取 {content_blocks.length} 个内容块，{images_uploaded.length} 张图片
-            {hasTranslation && ' · 已翻译'}
+            {hasTranslation && translatedLanguages.length > 0 && (
+              <span className="text-green-400 font-medium">
+                {' · 已翻译到 '}
+                {translatedLanguages.map(lang => languageNames[lang] || lang).join('、')}
+              </span>
+            )}
           </p>
         </div>
       </div>
+
+      {/* Translation Info */}
+      {translatedLanguages.length > 0 && (
+        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <CheckCircle2 className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-400 mb-2">✨ 多语言翻译已完成</p>
+              <p className="text-xs text-gray-300 mb-3">
+                内容已自动翻译到以下 {translatedLanguages.length} 种语言：
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {translatedLanguages.map(lang => (
+                  <span
+                    key={lang}
+                    className="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30"
+                  >
+                    {languageNames[lang] || lang}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-3">
+                💡 点击下方"使用此内容"按钮，翻译后的内容将自动填充到创建表单中
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Title */}
       <div className="space-y-2">
@@ -175,9 +238,31 @@ const DocumentPreviewPanel: React.FC<DocumentPreviewPanelProps> = ({ result }) =
                   </p>
                 )}
                 {block.type === 'image' && (
-                  <div className="flex items-center gap-2 text-sm text-[#00a4e4]">
-                    <Image className="w-4 h-4" />
-                    <span>图片: {blockContent}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-[#00a4e4]">
+                      <Image className="w-4 h-4" />
+                      <span>图片</span>
+                    </div>
+                    {block.url && (
+                      <div className="relative aspect-video bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                        <img
+                          src={block.url}
+                          alt={block.caption || blockContent}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            // 图片加载失败时显示占位符
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-sm">图片加载失败: ${block.url}</div>`;
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                    {block.caption && (
+                      <p className="text-xs text-gray-400 italic">{block.caption}</p>
+                    )}
                   </div>
                 )}
                 {block.type === 'code' && (

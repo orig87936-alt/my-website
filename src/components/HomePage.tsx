@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, useScroll, useTransform } from 'motion/react';
@@ -9,23 +9,59 @@ export function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollYProgress } = useScroll();
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   // Parallax effect for hero section - smoother transitions
   const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 150]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6], [1, 0.5, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
 
-  // Mouse move effect
+  // Mouse move effect - 仅在非触摸设备上启用
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth - 0.5) * 20,
-        y: (e.clientY / window.innerHeight - 0.5) * 20,
-      });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    // 检测是否为触摸设备
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (!isTouchDevice) {
+      const handleMouseMove = (e: MouseEvent) => {
+        setMousePosition({
+          x: (e.clientX / window.innerWidth - 0.5) * 20,
+          y: (e.clientY / window.innerHeight - 0.5) * 20,
+        });
+      };
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+    }
   }, []);
+
+  // 自动播放视频(静音)
+  useEffect(() => {
+    // 页面加载后自动开始播放
+    const timer = setTimeout(() => {
+      setIsPlaying(true);
+    }, 500); // 延迟500ms确保组件已挂载
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 视频播放控制 - 最后4秒变速
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isPlaying) return;
+
+    const handleTimeUpdate = () => {
+      const timeRemaining = video.duration - video.currentTime;
+
+      // 如果剩余时间小于等于4秒,将播放速度降低到0.5倍
+      if (timeRemaining <= 4 && timeRemaining > 0) {
+        video.playbackRate = 0.5;
+      } else {
+        video.playbackRate = 1.0;
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [isPlaying]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a2540] via-[#0e2d50] to-[#051429] relative">
@@ -43,23 +79,11 @@ export function HomePage() {
 
       {/* Video Hero Section - Full Screen */}
       <motion.section
-        className="relative h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429]"
+        className="mobile-hero-section relative h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0a2540] via-[#0d2847] to-[#051429]"
         style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
       >
-        {/* Video Title */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative z-20 mb-12 text-center px-8"
-        >
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-wide">
-            {language.startsWith('zh') ? '视频标题' : 'SOLID ITRATIVE EVOLUTION'}
-          </h1>
-        </motion.div>
-
-        {/* Video Container */}
-        <div className="relative z-10 w-full flex items-center justify-center flex-1">
+        {/* Video Container - Full Screen */}
+        <div className="mobile-video-container relative z-10 w-full h-full flex items-center justify-center">
           {!isPlaying ? (
             <div className="w-full h-full flex items-center justify-center">
               {/* Video Window with Play Button */}
@@ -69,11 +93,24 @@ export function HomePage() {
                 transition={{ duration: 1, delay: 0.3 }}
                 className="relative w-[90%] max-w-5xl aspect-video rounded-3xl overflow-hidden glass shadow-2xl"
                 style={{
-                  transform: `perspective(1000px) rotateX(${mousePosition.y * 0.02}deg) rotateY(${mousePosition.x * 0.02}deg)`,
+                  // 仅在非触摸设备上应用 3D 效果
+                  transform: window.matchMedia('(hover: hover)').matches
+                    ? `perspective(1000px) rotateX(${mousePosition.y * 0.02}deg) rotateY(${mousePosition.x * 0.02}deg)`
+                    : 'none',
                   transition: 'transform 0.1s ease-out'
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1a3654]/80 via-[#0d2847]/90 to-[#0a2540]/85 flex items-center justify-center">
+                {/* 视频第一帧作为背景 */}
+                <video
+                  className="absolute inset-0 w-full h-full object-cover"
+                  src={videoFile}
+                  preload="auto"
+                  muted
+                  playsInline
+                />
+
+                {/* 半透明遮罩层 */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1a3654]/60 via-[#0d2847]/70 to-[#0a2540]/65 flex items-center justify-center">
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 overflow-hidden">
                     <motion.div
@@ -87,53 +124,65 @@ export function HomePage() {
 
                   <button
                     onClick={() => setIsPlaying(true)}
-                    className="group relative"
+                    className="mobile-play-button group relative"
                     aria-label="Play video"
                   >
                     {/* Outer Glow */}
                     <div className="absolute inset-0 rounded-full bg-[#00a4e4]/20 blur-2xl scale-150 group-hover:bg-[#00a4e4]/30 transition-all duration-500"></div>
-                    
+
                     {/* Play Button */}
                     <div className="relative z-10 w-28 h-28 rounded-full bg-white/10 backdrop-blur-md border-2 border-white/30 flex items-center justify-center transition-all duration-500 group-hover:bg-white/20 group-hover:border-[#00a4e4]/50 group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(0,164,228,0.3)]">
-                      <Play className="w-12 h-12 text-white ml-2 group-hover:text-[#00a4e4] transition-colors duration-300" fill="white" />
+                      <Play className="mobile-play-icon w-12 h-12 text-white ml-2 group-hover:text-[#00a4e4] transition-colors duration-300" fill="white" />
                     </div>
-                    
+
                     {/* Pulse Animation */}
                     <div className="absolute inset-0 rounded-full bg-[#00a4e4]/20 animate-ping"></div>
                   </button>
                 </div>
 
                 {/* Decorative corner accents with glow */}
-                <motion.div 
-                  className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-[#00a4e4]/30 rounded-tl-3xl"
+                <motion.div
+                  className="mobile-corner-decoration absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-[#00a4e4]/30 rounded-tl-3xl"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 1, delay: 0.8 }}
                 >
-                  <div className="absolute top-0 left-0 w-8 h-8 bg-[#00a4e4]/20 blur-xl rounded-full"></div>
+                  <div className="mobile-corner-glow absolute top-0 left-0 w-8 h-8 bg-[#00a4e4]/20 blur-xl rounded-full"></div>
                 </motion.div>
-                <motion.div 
-                  className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-[#3b5bdb]/30 rounded-br-3xl"
+                <motion.div
+                  className="mobile-corner-decoration absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-[#3b5bdb]/30 rounded-br-3xl"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 1, delay: 0.8 }}
                 >
-                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#3b5bdb]/20 blur-xl rounded-full"></div>
+                  <div className="mobile-corner-glow absolute bottom-0 right-0 w-8 h-8 bg-[#3b5bdb]/20 blur-xl rounded-full"></div>
                 </motion.div>
               </motion.div>
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center p-8">
-              <div className="w-[90%] max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-2xl">
-                <video
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  muted
-                  playsInline
-                  controls
-                >
-                  <source src={videoFile} type="video/mp4" />
-                  您的浏览器不支持视频播放�?                </video>
+              <div className="w-[90%] max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-2xl relative">
+                {/* 视频容器 - 只裁剪底部水印，保持顶部和控制栏完整 */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <video
+                    ref={videoRef}
+                    className="w-full object-cover"
+                    style={{
+                      height: '105%',
+                      marginTop: '0',
+                      objectPosition: 'center top'
+                    }}
+                    autoPlay
+                    muted
+                    playsInline
+                    controls
+                    controlsList="nodownload"
+                    preload="auto"
+                  >
+                    <source src={videoFile} type="video/mp4" />
+                    您的浏览器不支持视频播放。
+                  </video>
+                </div>
               </div>
             </div>
           )}
@@ -152,7 +201,7 @@ export function HomePage() {
       {/* Company Introduction Section with City Background */}
       <section className="relative py-24 md:py-32 overflow-hidden">
         {/* Background Image with Parallax */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0"
           style={{ y: useTransform(scrollYProgress, [0.3, 0.8], [-50, 100]) }}
         >
@@ -180,7 +229,7 @@ export function HomePage() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               {/* Company Name - Large Title with enhanced effects */}
-              <h2 className="text-6xl md:text-7xl lg:text-8xl font-light text-white mb-8 tracking-tight leading-tight relative group">
+              <h2 className="text-6xl md:text-7xl lg:text-8xl text-white mb-8 tracking-wide leading-tight relative group" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 300 }}>
                 S&L
                 {/* Subtle underline accent */}
                 <motion.div

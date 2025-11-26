@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { motion } from 'motion/react';
@@ -34,6 +35,16 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
   const [activeId, setActiveId] = useState<string>('');
   const [imageLoadStates, setImageLoadStates] = useState<{ [key: number]: boolean }>({});
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Debug: Log content
+  useEffect(() => {
+    console.log('📝 MarkdownRenderer received content:', {
+      type: typeof content,
+      isArray: Array.isArray(content),
+      length: Array.isArray(content) ? content.length : 'N/A',
+      content: content
+    });
+  }, [content]);
 
   // Generate TOC from headings
   useEffect(() => {
@@ -109,6 +120,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             className="text-base text-gray-300 leading-relaxed tracking-wide mb-6"
+            style={{ textAlign: 'justify' }}
           >
             {block.text}
           </motion.p>
@@ -154,7 +166,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
                 className="text-base text-gray-300 leading-relaxed tracking-wide flex items-start gap-3"
               >
                 <span className="text-[#00a4e4] mt-2 flex-shrink-0">•</span>
-                <span>{item}</span>
+                <span style={{ textAlign: 'justify', flex: 1 }}>{item}</span>
               </li>
             ))}
           </motion.ul>
@@ -243,7 +255,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
             transition={{ delay: index * 0.05 }}
             className="border-l-4 border-[#00a4e4] pl-6 py-4 my-6 bg-white/5 rounded-r-lg italic"
           >
-            <p className="text-lg text-gray-300 leading-relaxed">{block.text}</p>
+            <p className="text-lg text-gray-300 leading-relaxed" style={{ textAlign: 'justify' }}>{block.text}</p>
           </motion.blockquote>
         );
 
@@ -258,6 +270,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
               components={{
                 h1: ({ children }) => (
                   <h1 className="text-4xl font-light text-white mt-16 mb-8 pb-4 border-b-2 border-[#00a4e4]/50">
@@ -273,7 +286,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
                   <h3 className="text-2xl font-light text-white mt-10 mb-5">{children}</h3>
                 ),
                 p: ({ children }) => (
-                  <p className="text-base text-gray-300 leading-relaxed tracking-wide mb-6">
+                  <p className="text-base text-gray-300 leading-relaxed tracking-wide mb-6" style={{ textAlign: 'justify' }}>
                     {children}
                   </p>
                 ),
@@ -282,7 +295,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
                 li: ({ children }) => (
                   <li className="text-base text-gray-300 leading-relaxed tracking-wide flex items-start gap-3">
                     <span className="text-[#00a4e4] mt-2 flex-shrink-0">•</span>
-                    <span>{children}</span>
+                    <span style={{ textAlign: 'justify', flex: 1 }}>{children}</span>
                   </li>
                 ),
                 img: ({ src, alt }: any) => (
@@ -378,7 +391,7 @@ export function MarkdownRenderer({ content, showTOC = true, className = '' }: Ma
       )}
 
       {/* Content */}
-      <div ref={contentRef} className="space-y-4">
+      <div ref={contentRef} className="space-y-4" style={{ textAlign: 'justify' }}>
         {content.map((block, index) => renderBlock(block, index))}
       </div>
     </div>

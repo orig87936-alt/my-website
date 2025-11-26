@@ -158,7 +158,13 @@ export function NewsEditor({ articleId, onClose }: NewsEditorProps) {
         console.log('✨ Creating new article...');
         const articleToCreate = { ...article };
         delete articleToCreate.id; // 移除旧的非 UUID ID
-        await createNewsArticle(articleToCreate);
+        const createdArticle = await createNewsArticle(articleToCreate);
+
+        // 保存 ID 映射，以便下次可以更新而不是创建
+        const idMapping = JSON.parse(localStorage.getItem('article_id_mapping') || '{}');
+        idMapping[articleId] = createdArticle.id;
+        localStorage.setItem('article_id_mapping', JSON.stringify(idMapping));
+        console.log(`✅ Saved ID mapping: ${articleId} -> ${createdArticle.id}`);
       }
 
       setIsSaving(false);

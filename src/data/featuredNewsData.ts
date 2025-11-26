@@ -79,7 +79,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': '北京承諾購買大豆、延遲稀土出口管制並遏制芬太尼——但美國讓步的問題仍然存在。',
       'en': 'Beijing is pledging to buy soybeans, delay rare-earth export controls and curb fentanyl.'
     },
-    link: 'news-insights'
+    link: '/news/news-insights'
   },
   {
     id: 'genius-act',
@@ -104,7 +104,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': '這是一項歷史性的立法，將為美國引領全球數字貨幣革命鋪平道路。',
       'en': 'A historic piece of legislation that will pave the way for the United States to lead the global digital currency revolution.'
     },
-    link: 'genius-act'
+    link: '/news/genius-act'
   },
   {
     id: 'ai-hallucination',
@@ -129,7 +129,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': 'AI模型的"幻覺"問題源於訓練機制的系統性缺陷，是當前LLM核心架構的"必然副產品"。',
       'en': 'AI model "hallucinations" stem from systematic flaws in training mechanisms.'
     },
-    link: 'ai-hallucination'
+    link: '/news/ai-hallucination'
   },
   {
     id: 'state-of-crypto-2025',
@@ -154,7 +154,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': '穩定幣、機構採用與AI的融合，2025年加密貨幣行業狀態報告。',
       'en': 'Stablecoins, institutional adoption, and AI convergence in the 2025 crypto industry report.'
     },
-    link: 'state-of-crypto-2025'
+    link: '/news/state-of-crypto-2025'
   },
   {
     id: 'manus-ai',
@@ -179,7 +179,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': 'Manus AI的能力、局限性與市場定位深度分析報告。',
       'en': 'In-depth analysis of Manus AI capabilities, limitations, and market positioning.'
     },
-    link: 'manus-ai'
+    link: '/news/manus-ai'
   },
   {
     id: 'global-economy-2025',
@@ -204,7 +204,7 @@ export const featuredArticles: FeaturedArticle[] = [
       'zh-TW': '全球經濟增長將加速，儘管面臨地緣政治緊張局勢和政策不確定性等挑戰。',
       'en': 'Global economic growth set to strengthen despite geopolitical tensions and policy uncertainties.'
     },
-    link: 'global-economy-2025'
+    link: '/news/global-economy-2025'
   }
 ];
 

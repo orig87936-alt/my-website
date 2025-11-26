@@ -94,26 +94,32 @@ class DeepSeekService:
         if "预约" in last_message:
             return """您可以通过以下步骤进行预约：
 
-1. 访问我们的预约页面
+1. 点击页面上方的"预约"按钮
 2. 选择合适的日期和时间（工作时间：9:00-18:00）
 3. 填写您的联系信息（姓名、邮箱、电话）
 4. 选择服务类型并添加备注
 5. 提交预约
 
-预约成功后，您会收到确认邮件。如有任何问题，请随时联系我们！"""
+预约成功后，您会收到确认邮件。
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         elif "取消" in last_message:
             return """如需取消预约，请联系我们的客服团队，提供您的预约确认号。我们会尽快为您处理。
 
 客服邮箱：support@example.com
-客服电话：400-123-4567"""
+客服电话：400-123-4567
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         elif "时间" in last_message or "营业" in last_message:
             return """我们的营业时间为：
 周一至周五：9:00 - 18:00
 周六至周日：休息
 
-预约时间槽为 30 分钟间隔，您可以选择任意可用的时间段。"""
+预约时间槽为 30 分钟间隔，您可以选择任意可用的时间段。
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         elif "服务" in last_message or "咨询" in last_message:
             return """我们提供以下服务：
@@ -123,10 +129,14 @@ class DeepSeekService:
 3. 产品演示 - 产品功能展示和体验
 4. 培训服务 - 专业培训和指导
 
-您可以在预约时选择您需要的服务类型。"""
+您可以在预约时选择您需要的服务类型。
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         elif "你好" in last_message or "您好" in last_message or "hi" in last_message:
-            return "您好！我是智能助手，很高兴为您服务。您可以问我关于预约、服务、文章等方面的问题。"
+            return """您好！我是智能助手，很高兴为您服务。您可以问我关于预约、服务、文章等方面的问题。
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         else:
             return f"""感谢您的提问！我已经收到您的消息："{messages[-1]['content']}"
@@ -138,7 +148,9 @@ class DeepSeekService:
 - 取消或修改预约
 - 其他常见问题
 
-请告诉我您想了解什么？"""
+请告诉我您想了解什么？
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
     
     @staticmethod
     def build_rag_prompt(
@@ -186,7 +198,13 @@ class DeepSeekService:
 3. 回答要简洁、准确、友好
 4. 使用中文回答
 5. 如果涉及预约，提供清晰的步骤说明
-6. 保持专业和礼貌的语气"""
+6. 保持专业和礼貌的语气
+7. **重要**：在回答的最后，务必提醒用户如需进一步咨询，可以通过页面上方的"预约"按钮预约具体时间进行一对一咨询服务
+
+回答格式示例：
+[回答用户的问题...]
+
+💡 如需进一步咨询，欢迎点击页面上方的"预约"按钮，选择合适的时间预约一对一咨询服务。我们的专业顾问将为您提供更详细的解答。"""
         
         # 构建用户提示
         if context:
@@ -228,7 +246,16 @@ class DeepSeekService:
             Exception: API 调用失败时抛出异常
         """
         # 构建翻译提示词
-        lang_names = {"zh": "中文", "en": "英文"}
+        lang_names = {
+            "zh": "简体中文",
+            "zh-tw": "繁体中文",
+            "en": "英文",
+            "ja": "日文",
+            "es": "西班牙文",
+            "fr": "法文",
+            "ar": "阿拉伯文",
+            "hi": "印地文"
+        }
         source_name = lang_names.get(source_lang, source_lang)
         target_name = lang_names.get(target_lang, target_lang)
 
@@ -252,18 +279,38 @@ class DeepSeekService:
         # 估算：中文 1 字符 ≈ 2 tokens，英文 1 字符 ≈ 0.5 tokens
         # 翻译结果通常比原文长 20-50%
         estimated_tokens = int(len(text) * 3)  # 保守估计
-        max_tokens = max(2000, min(estimated_tokens, 8000))  # 最少 2000，最多 8000
+        # DeepSeek API 的 max_tokens 上限是 4096
+        max_tokens = max(2000, min(estimated_tokens, 4096))  # 最少 2000，最多 4096
 
-        print(f"📊 Translation params: text_length={len(text)}, max_tokens={max_tokens}")
+        # 警告：如果文本太长，可能会被截断
+        if estimated_tokens > 4096:
+            print(f"⚠️  WARNING: Text is too long ({len(text)} chars, ~{estimated_tokens} tokens). Translation may be truncated!")
+            print(f"⚠️  Consider splitting the text into smaller chunks (max ~1300 chars per chunk)")
+
+        print(f"📊 Translation params: text_length={len(text)}, estimated_tokens={estimated_tokens}, max_tokens={max_tokens}")
+        print(f"🌐 Translating: {source_lang} ({source_name}) → {target_lang} ({target_name})")
 
         # 调用 chat_completion
-        result = await DeepSeekService.chat_completion(
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=0.3   # 降低温度以获得更一致的翻译
-        )
+        try:
+            result = await DeepSeekService.chat_completion(
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.3   # 降低温度以获得更一致的翻译
+            )
 
-        return result.strip()
+            print(f"✅ DeepSeek API returned: {len(result) if result else 0} chars")
+            print(f"📝 Result preview: {result[:100] if result else 'EMPTY'}")
+
+            if not result or not result.strip():
+                print(f"⚠️ WARNING: DeepSeek returned empty result for {source_lang} → {target_lang}")
+                print(f"⚠️ Original text: {text[:200]}")
+                return text  # 返回原文而不是空字符串
+
+            return result.strip()
+        except Exception as e:
+            print(f"❌ DeepSeek API error for {source_lang} → {target_lang}: {e}")
+            print(f"❌ Returning original text")
+            return text  # 返回原文
 
     @staticmethod
     async def generate_summary(text: str, max_length: int = 80) -> str:

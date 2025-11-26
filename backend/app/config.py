@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
+    ADMIN_NOTIFICATION_EMAIL: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
     # Google OAuth
@@ -75,6 +76,17 @@ class Settings(BaseSettings):
     ALLOWED_FILE_TYPES: str = ".md,.docx"
     TEMP_UPLOAD_DIR: str = "./temp_uploads"
 
+    # Backend API URL (for internal service calls)
+    # 生产环境应使用: http://api.s-l.ai 或 http://127.0.0.1:8000
+    # 开发环境可使用: http://localhost:8000
+    # 注意: 在 Docker 容器中，localhost 可能无法正确解析，建议使用 127.0.0.1
+    BACKEND_URL: str = "http://127.0.0.1:8000"
+
+    # Public API URL (for generating URLs accessible from browser)
+    # 生产环境应使用: http://api.s-l.ai
+    # 开发环境可使用: http://localhost:8000
+    PUBLIC_API_URL: str = "http://api.s-l.ai"
+
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
@@ -91,7 +103,39 @@ class Settings(BaseSettings):
         """Parse CORS origins from comma-separated string"""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
+    def validate_config(self):
+        """验证关键配置项"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # 验证 BACKEND_URL
+        if not self.BACKEND_URL:
+            logger.error("❌ BACKEND_URL 未配置！")
+            raise ValueError("BACKEND_URL is required")
+
+        if self.BACKEND_URL == "http://localhost:8000":
+            logger.warning("⚠️ BACKEND_URL 使用默认值 'http://localhost:8000'")
+            logger.warning("   在生产环境中，建议使用 'http://api.s-l.ai' 或 'http://127.0.0.1:8000'")
+
+        # 验证 URL 格式
+        if not self.BACKEND_URL.startswith(("http://", "https://")):
+            logger.error(f"❌ BACKEND_URL 格式错误: {self.BACKEND_URL}")
+            raise ValueError("BACKEND_URL must start with http:// or https://")
+
+        logger.info(f"✅ BACKEND_URL 配置: {self.BACKEND_URL}")
+
+        # 验证其他关键配置
+        if self.SECRET_KEY == "your-secret-key-change-in-production":
+            logger.warning("⚠️ SECRET_KEY 使用默认值，请在生产环境中修改！")
+
+        if self.ENVIRONMENT == "production" and "localhost" in self.BACKEND_URL:
+            logger.warning("⚠️ 生产环境中 BACKEND_URL 包含 'localhost'，可能导致连接问题")
+
 @lru_cache()
 def get_settings():
-    return Settings()
+    settings = Settings()
+    settings.validate_config()
+    return settings
 
+# Create a global settings instance for easy import
+settings = get_settings()

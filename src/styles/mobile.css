@@ -1,0 +1,1419 @@
+/*
+ * Mobile-specific styles - 移动端专用样式
+ * This file contains all mobile adaptations using CSS media queries
+ * Desktop styles remain untouched in the component files
+ *
+ * Breakpoint: max-width: 768px (mobile devices)
+ *
+ * 重要提示：
+ * 1. 所有移动端样式修改只在此文件中进行
+ * 2. 不要修改组件文件中的 Tailwind 类名
+ * 3. 使用 !important 确保移动端样式优先级
+ * 4. 桌面端样式完全不受影响
+ */
+
+/* ============================================
+   GLOBAL - 全局移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 确保移动端不会出现横向滚动 */
+  body {
+    overflow-x: hidden !important;
+  }
+
+  /* 移动端字体大小基准调整 */
+  html {
+    font-size: 16px !important;
+  }
+
+  /* 移动端触摸优化 */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+}
+
+/* ============================================
+   NAVIGATION - 导航栏移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 顶部导航栏 - 增加背景不透明度 */
+  .mobile-top-nav {
+    height: 60px !important;
+    background-color: rgba(5, 22, 42, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+  }
+
+  .mobile-top-nav-content {
+    height: 60px !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Logo - 适配移动端高度 */
+  .mobile-logo {
+    flex-shrink: 0 !important;
+    height: 48px !important;
+  }
+
+  .mobile-logo > div {
+    height: 48px !important;
+  }
+
+  .mobile-logo img {
+    height: 48px !important;
+    width: auto !important;
+  }
+
+  /* 右侧导航区域 */
+  .mobile-top-nav-right {
+    gap: 0.25rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 语言选择器 - 显示地球图标 */
+  .mobile-language-selector {
+    padding: 0.5rem !important;
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    justify-content: center !important;
+    display: flex !important;
+    align-items: center !important;
+    position: relative !important; /* 添加相对定位，使 select 相对于此容器定位 */
+  }
+
+  .mobile-language-selector select {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    pointer-events: all !important;
+    left: 0 !important;
+    top: 0 !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+  }
+
+  .mobile-language-selector svg {
+    margin: 0 !important;
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+    flex-shrink: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 登录/注册按钮 - 只显示图标 */
+  .mobile-auth-buttons {
+    gap: 0.25rem !important;
+  }
+
+  .mobile-login-button,
+  .mobile-register-button {
+    padding: 0.5rem !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    width: 40px !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .mobile-login-button span,
+  .mobile-register-button span {
+    display: none !important;
+  }
+
+  .mobile-login-button svg,
+  .mobile-register-button svg {
+    margin: 0 !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* 菜单按钮 */
+  .mobile-menu-button {
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem !important;
+  }
+
+  .mobile-menu-button svg {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+
+  /* 侧边栏 */
+  .mobile-nav-sidebar {
+    width: 100% !important;
+    max-width: 280px !important;
+    padding: 1.5rem 1rem !important;
+  }
+
+  /* 侧边栏 Logo */
+  .mobile-sidebar-logo {
+    margin-bottom: 2rem !important;
+    transform: scale(0.9) !important;
+  }
+
+  /* 导航项 */
+  .mobile-nav-item {
+    padding: 0.875rem 1rem !important;
+    font-size: 0.9375rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .mobile-nav-icon {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  /* 导航按钮 */
+  .mobile-nav-button {
+    padding: 0.75rem 1.25rem !important;
+    font-size: 0.875rem !important;
+    width: 100% !important;
+  }
+
+  /* 联系信息 */
+  .mobile-contact-info {
+    padding: 1rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .mobile-contact-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+}
+
+/* ============================================
+   HOMEPAGE - 主页移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* Hero 视频区域 */
+  .mobile-hero-section {
+    min-height: 100vh !important;
+    padding-top: 60px !important;
+    padding-bottom: 1rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  /* 视频标题 - 移动端隐藏 */
+  .mobile-hero-title {
+    display: none !important;
+  }
+
+  /* 视频容器 */
+  .mobile-video-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 1rem !important;
+    margin: 0 auto !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mobile-video-container > div {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .mobile-video-container .glass {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 1.25rem !important;
+  }
+
+  /* 播放按钮 - 只显示一个 */
+  .mobile-play-button {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+
+  .mobile-play-button > div:first-child {
+    display: none !important;
+  }
+
+  .mobile-play-button > div:nth-child(2) {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+
+  .mobile-play-button > div:last-child {
+    display: none !important;
+  }
+
+  .mobile-play-icon {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  /* 视频窗口装饰 */
+  .mobile-corner-decoration {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .mobile-corner-glow {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  /* 公司介绍区域 */
+  .mobile-company-intro {
+    padding: 3rem 1.25rem !important;
+    min-height: auto !important;
+  }
+
+  /* 公司介绍标题 */
+  .mobile-company-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 1.5rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* 公司介绍描述 */
+  .mobile-company-description {
+    font-size: 1.0625rem !important;
+    line-height: 1.7 !important;
+    margin-bottom: 1.5rem !important;
+    max-width: 100% !important;
+  }
+
+  /* 下划线装饰 */
+  .mobile-company-underline {
+    height: 0.1875rem !important;
+    max-width: 80% !important;
+  }
+
+  /* 背景图片优化 */
+  .mobile-company-background {
+    opacity: 0.15 !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+}
+
+/* ============================================
+   BUSINESS PAGE - 业务页面移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* Hero 区域 */
+  .mobile-business-hero {
+    padding: 5rem 1.25rem 3rem !important;
+  }
+
+  .mobile-business-hero-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 1rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .mobile-business-hero-subtitle {
+    font-size: 1.0625rem !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+  }
+
+  /* 主内容区域 */
+  .mobile-business-content {
+    padding: 2rem 1.25rem !important;
+  }
+
+  /* 网格布局 */
+  .mobile-business-grid {
+    gap: 2.5rem !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 分类标题 */
+  .mobile-business-section-title {
+    font-size: 2rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.75rem !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  .mobile-business-section-subtitle {
+    font-size: 0.9375rem !important;
+    margin-bottom: 1.5rem !important;
+    opacity: 0.8 !important;
+  }
+
+  /* 卡片容器 */
+  .mobile-business-cards {
+    gap: 1.25rem !important;
+  }
+
+  /* 业务卡片 */
+  .mobile-business-card {
+    border-radius: 1.25rem !important;
+    min-height: 240px !important;
+    padding: 1.5rem !important;
+    transition: transform 0.3s ease !important;
+  }
+
+  .mobile-business-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  /* 卡片图标 */
+  .mobile-business-card-icon-container {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .mobile-business-card-icon {
+    width: 1.375rem !important;
+    height: 1.375rem !important;
+  }
+
+  /* 回报率标签 */
+  .mobile-business-card-return-label {
+    font-size: 0.8125rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .mobile-business-card-return-value {
+    font-size: 1.375rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* 卡片标题 */
+  .mobile-business-card-title {
+    font-size: 1.1875rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.625rem !important;
+    margin-top: 0.75rem !important;
+  }
+
+  /* 卡片描述 */
+  .mobile-business-card-description {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1rem !important;
+    opacity: 0.85 !important;
+  }
+
+  /* 了解更多链接 */
+  .mobile-business-card-learn-more {
+    font-size: 0.8125rem !important;
+    padding: 0.5rem 0 !important;
+  }
+
+  .mobile-business-card-arrow {
+    width: 0.9375rem !important;
+    height: 0.9375rem !important;
+  }
+
+  /* 投资策略和价值创造区域 */
+  .mobile-strategy-section {
+    padding: 2rem 1.25rem !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+  }
+
+  .mobile-strategy-grid {
+    gap: 1.75rem !important;
+  }
+
+  /* 策略卡片 */
+  .mobile-strategy-card {
+    border-radius: 1.25rem !important;
+    padding: 1.75rem 1.5rem !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+  }
+
+  .mobile-strategy-title {
+    font-size: 1.625rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 1.25rem !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  .mobile-strategy-description {
+    font-size: 0.9375rem !important;
+    line-height: 1.7 !important;
+    margin-bottom: 1.75rem !important;
+    opacity: 0.85 !important;
+  }
+
+  /* 策略按钮 */
+  .mobile-strategy-button {
+    font-size: 0.9375rem !important;
+    padding: 0.75rem 1.5rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .mobile-strategy-arrow {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  /* 卡片图片优化 */
+  .mobile-business-card-image {
+    height: 120px !important;
+    object-fit: cover !important;
+    border-radius: 0.75rem !important;
+  }
+}
+
+/* ============================================
+   NEWS PAGE - 新闻页面移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* Hero 区域 */
+  .mobile-news-hero {
+    padding: 5rem 1.25rem 3rem !important;
+  }
+
+  .mobile-news-hero-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 1rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .mobile-news-hero-subtitle {
+    font-size: 1.0625rem !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+  }
+
+  /* Latest 最新新闻区域 */
+  .mobile-news-latest {
+    padding: 2rem 1rem !important;
+  }
+
+  /* Latest 标题和控制区域 */
+  .mobile-news-latest > div > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .mobile-news-latest-title {
+    font-size: 1.75rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* 控制按钮容器 */
+  .mobile-news-latest > div > div:first-child > div {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+  }
+
+  /* 分类按钮 */
+  .mobile-news-category-buttons {
+    gap: 0.5rem !important;
+    margin-bottom: 1.5rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .mobile-news-category-button {
+    padding: 0.625rem 1rem !important;
+    font-size: 0.875rem !important;
+    border-radius: 0.5rem !important;
+    white-space: nowrap !important;
+    flex: 1 !important;
+    min-width: auto !important;
+  }
+
+  /* 添加新闻按钮 */
+  .mobile-news-latest-button {
+    padding: 0.625rem 1rem !important;
+    font-size: 0.875rem !important;
+    border-radius: 0.5rem !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-news-latest-button-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  .mobile-news-latest-button span {
+    display: none !important;
+  }
+
+  /* 滚动容器 */
+  .mobile-news-scroll-container {
+    height: 450px !important;
+    max-height: 60vh !important;
+    border-radius: 1.25rem !important;
+    padding: 0.5rem !important;
+  }
+
+  /* 渐变遮罩 */
+  .mobile-news-gradient {
+    height: 4rem !important;
+  }
+
+  /* 新闻项 */
+  .mobile-news-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    padding: 1rem !important;
+    border-radius: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .mobile-news-item:active {
+    transform: scale(0.98) !important;
+  }
+
+  /* 时间标签容器 */
+  .mobile-news-time {
+    width: 100% !important;
+    min-width: auto !important;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    font-size: 0.8125rem !important;
+    opacity: 0.7 !important;
+  }
+
+  /* 新闻内容容器 */
+  .mobile-news-item > div:nth-child(2) {
+    width: 100% !important;
+  }
+
+  /* 新闻标题 */
+  .mobile-news-title {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    font-weight: 500 !important;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* 新闻摘要 */
+  .mobile-news-summary {
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+    opacity: 0.8 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* 箭头图标（移动端隐藏） */
+  .mobile-news-arrow {
+    display: none !important;
+  }
+
+  /* Focus Point 焦点新闻 */
+  .mobile-news-focus {
+    padding: 2rem 1.25rem !important;
+  }
+
+  .mobile-news-focus-card {
+    border-radius: 1.25rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .mobile-news-focus-title {
+    font-size: 1.5rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-news-focus-summary {
+    font-size: 0.9375rem !important;
+    line-height: 1.7 !important;
+  }
+
+  /* Featured Articles 精选文章 */
+  .mobile-news-featured {
+    padding: 2rem 1.25rem !important;
+  }
+
+  .mobile-news-featured-grid {
+    gap: 1.25rem !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobile-news-featured-card {
+    border-radius: 1.25rem !important;
+    padding: 1.25rem !important;
+  }
+
+  .mobile-news-featured-image {
+    height: 180px !important;
+    border-radius: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-news-featured-title {
+    font-size: 1.125rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .mobile-news-featured-excerpt {
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+}
+
+/* ============================================
+   CONSULTING PAGE - 咨询页面移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* Hero 区域 */
+  .mobile-consulting-hero {
+    padding: 5rem 1.25rem 3rem !important;
+  }
+
+  .mobile-consulting-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 1rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .mobile-consulting-subtitle {
+    font-size: 1.0625rem !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+  }
+
+  /* 主内容区域 */
+  .mobile-consulting-content {
+    padding: 2rem 1.25rem !important;
+  }
+
+  /* 服务卡片 */
+  .mobile-consulting-service-card {
+    border-radius: 1.25rem !important;
+    padding: 1.75rem 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .mobile-consulting-service-title {
+    font-size: 1.375rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-consulting-service-description {
+    font-size: 0.9375rem !important;
+    line-height: 1.7 !important;
+    opacity: 0.85 !important;
+  }
+
+  /* 预约表单 */
+  .mobile-consulting-form {
+    padding: 1.5rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .mobile-consulting-form-input {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .mobile-consulting-form-button {
+    padding: 0.875rem 1.5rem !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+    border-radius: 0.5rem !important;
+  }
+}
+
+/* ============================================
+   CONTACT PAGE - 联系页面移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* Hero 区域 */
+  .mobile-contact-hero {
+    padding: 5rem 1.25rem 3rem !important;
+  }
+
+  .mobile-contact-title {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 1rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .mobile-contact-subtitle {
+    font-size: 1.0625rem !important;
+    line-height: 1.6 !important;
+    max-width: 100% !important;
+  }
+
+  /* 主内容区域 */
+  .mobile-contact-content {
+    padding: 2rem 1.25rem !important;
+  }
+
+  /* 联系信息卡片 */
+  .mobile-contact-info-card {
+    border-radius: 1.25rem !important;
+    padding: 1.75rem 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .mobile-contact-info-icon {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-contact-info-title {
+    font-size: 1.125rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .mobile-contact-info-text {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+  }
+
+  /* 联系表单 */
+  .mobile-contact-form {
+    padding: 1.5rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .mobile-contact-form-input {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-contact-form-textarea {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 120px !important;
+  }
+
+  .mobile-contact-form-button {
+    padding: 0.875rem 1.5rem !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* 地图容器 */
+  .mobile-contact-map {
+    height: 250px !important;
+    border-radius: 1.25rem !important;
+    margin-top: 1.5rem !important;
+  }
+}
+
+/* ============================================
+   MODALS & DIALOGS - 模态框移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 模态框容器 */
+  .mobile-modal-overlay {
+    padding: 1rem !important;
+  }
+
+  .mobile-modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    border-radius: 1.25rem !important;
+    padding: 1.5rem !important;
+    margin: 0 !important;
+  }
+
+  /* 模态框标题 */
+  .mobile-modal-title {
+    font-size: 1.375rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* 模态框关闭按钮 */
+  .mobile-modal-close {
+    width: 2rem !important;
+    height: 2rem !important;
+    top: 1rem !important;
+    right: 1rem !important;
+  }
+
+  /* 模态框按钮 */
+  .mobile-modal-button {
+    padding: 0.875rem 1.5rem !important;
+    font-size: 1rem !important;
+    width: 100% !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* 登录/注册模态框 */
+  .mobile-auth-modal {
+    padding: 2rem 1.5rem !important;
+  }
+
+  .mobile-auth-input {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .mobile-auth-button {
+    padding: 0.875rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+  }
+}
+
+/* ============================================
+   BUTTONS - 按钮移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 主要按钮 */
+  .mobile-button-primary {
+    padding: 0.875rem 1.5rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 44px !important; /* iOS 推荐的最小触摸目标 */
+  }
+
+  /* 次要按钮 */
+  .mobile-button-secondary {
+    padding: 0.75rem 1.25rem !important;
+    font-size: 0.9375rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 44px !important;
+  }
+
+  /* 小按钮 */
+  .mobile-button-small {
+    padding: 0.625rem 1rem !important;
+    font-size: 0.875rem !important;
+    border-radius: 0.375rem !important;
+  }
+
+  /* 图标按钮 */
+  .mobile-button-icon {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* 按钮图标 */
+  .mobile-button-icon-svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+}
+
+/* ============================================
+   FORMS - 表单移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 表单容器 */
+  .mobile-form-container {
+    padding: 1.5rem !important;
+  }
+
+  /* 表单组 */
+  .mobile-form-group {
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* 表单标签 */
+  .mobile-form-label {
+    font-size: 0.9375rem !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: 500 !important;
+  }
+
+  /* 输入框 */
+  .mobile-form-input {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 44px !important;
+    width: 100% !important;
+  }
+
+  /* 文本域 */
+  .mobile-form-textarea {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 120px !important;
+    width: 100% !important;
+  }
+
+  /* 选择框 */
+  .mobile-form-select {
+    padding: 0.875rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.5rem !important;
+    min-height: 44px !important;
+    width: 100% !important;
+  }
+
+  /* 复选框和单选框 */
+  .mobile-form-checkbox,
+  .mobile-form-radio {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  /* 表单错误信息 */
+  .mobile-form-error {
+    font-size: 0.8125rem !important;
+    margin-top: 0.375rem !important;
+  }
+
+  /* 表单帮助文本 */
+  .mobile-form-help {
+    font-size: 0.8125rem !important;
+    margin-top: 0.375rem !important;
+    opacity: 0.7 !important;
+  }
+}
+
+/* ============================================
+   CARDS - 卡片移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 通用卡片 */
+  .mobile-card {
+    border-radius: 1.25rem !important;
+    padding: 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  /* 卡片标题 */
+  .mobile-card-title {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* 卡片内容 */
+  .mobile-card-content {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+  }
+
+  /* 卡片图片 */
+  .mobile-card-image {
+    border-radius: 0.75rem !important;
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+  }
+
+  /* 卡片操作按钮 */
+  .mobile-card-actions {
+    margin-top: 1rem !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ============================================
+   IMAGES & MEDIA - 图片和媒体移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 响应式图片 */
+  .mobile-image-responsive {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+  }
+
+  /* 圆角图片 */
+  .mobile-image-rounded {
+    border-radius: 0.75rem !important;
+  }
+
+  /* 图片容器 */
+  .mobile-image-container {
+    position: relative !important;
+    overflow: hidden !important;
+    border-radius: 0.75rem !important;
+  }
+
+  /* 视频容器 */
+  .mobile-video-container {
+    position: relative !important;
+    width: 100% !important;
+    padding-bottom: 56.25% !important; /* 16:9 宽高比 */
+    border-radius: 0.75rem !important;
+    overflow: hidden !important;
+  }
+
+  .mobile-video-iframe {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+/* ============================================
+   TYPOGRAPHY - 文字排版移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 超大标题 */
+  .mobile-heading-xl {
+    font-size: 2.25rem !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* 大标题 */
+  .mobile-heading-lg {
+    font-size: 2rem !important;
+    line-height: 1.3 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  /* 中标题 */
+  .mobile-heading-md {
+    font-size: 1.5rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 小标题 */
+  .mobile-heading-sm {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 正文大 */
+  .mobile-text-lg {
+    font-size: 1.0625rem !important;
+    line-height: 1.7 !important;
+  }
+
+  /* 正文 */
+  .mobile-text-base {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+  }
+
+  /* 正文小 */
+  .mobile-text-sm {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+  }
+
+  /* 小字 */
+  .mobile-text-xs {
+    font-size: 0.8125rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* ============================================
+   SPACING - 间距移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 页面顶部间距 */
+  .mobile-pt-page {
+    padding-top: 5rem !important;
+  }
+
+  /* 区块间距 */
+  .mobile-section-spacing {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* 内容间距 */
+  .mobile-content-spacing {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  /* 元素间距 */
+  .mobile-gap-sm {
+    gap: 0.75rem !important;
+  }
+
+  .mobile-gap-md {
+    gap: 1.25rem !important;
+  }
+
+  .mobile-gap-lg {
+    gap: 1.75rem !important;
+  }
+}
+
+/* ============================================
+   ANIMATIONS - 动画移动端优化
+   ============================================ */
+@media (max-width: 768px) {
+  /* 减少动画以提升性能 */
+  .mobile-reduce-motion {
+    animation-duration: 0.3s !important;
+    transition-duration: 0.3s !important;
+  }
+
+  /* 触摸反馈 */
+  .mobile-touch-feedback:active {
+    transform: scale(0.98) !important;
+    opacity: 0.9 !important;
+  }
+
+  /* 禁用悬停效果（移动端不需要） */
+  .mobile-no-hover:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   SCROLLING - 滚动优化
+   ============================================ */
+@media (max-width: 768px) {
+  /* 平滑滚动 */
+  .mobile-scroll-smooth {
+    scroll-behavior: smooth !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* 隐藏滚动条 */
+  .mobile-scrollbar-hide {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .mobile-scrollbar-hide::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* 自定义滚动条（如果需要显示） */
+  .mobile-scrollbar-custom::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+  }
+
+  .mobile-scrollbar-custom::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 2px !important;
+  }
+
+  .mobile-scrollbar-custom::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 2px !important;
+  }
+
+  .mobile-scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+  }
+}
+
+/* ============================================
+   GRID & LAYOUT - 网格和布局移动端样式
+   ============================================ */
+@media (max-width: 768px) {
+  /* 单列布局 */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 两列布局 */
+  .mobile-grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Flex 列布局 */
+  .mobile-flex-col {
+    flex-direction: column !important;
+  }
+
+  /* Flex 行布局 */
+  .mobile-flex-row {
+    flex-direction: row !important;
+  }
+
+  /* 全宽 */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  /* 最大宽度 */
+  .mobile-max-width {
+    max-width: 100% !important;
+  }
+}
+
+/* ============================================
+   UTILITIES - 实用工具类
+   ============================================ */
+@media (max-width: 768px) {
+  /* 隐藏元素 */
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  /* 显示元素 */
+  .mobile-visible {
+    display: block !important;
+  }
+
+  /* 文本居中 */
+  .mobile-text-center {
+    text-align: center !important;
+  }
+
+  /* 文本左对齐 */
+  .mobile-text-left {
+    text-align: left !important;
+  }
+
+  /* 文本右对齐 */
+  .mobile-text-right {
+    text-align: right !important;
+  }
+
+  /* 文本截断 */
+  .mobile-text-truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* 多行文本截断 */
+  .mobile-text-clamp-2 {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .mobile-text-clamp-3 {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+}
+
+/* ============================================
+   PERFORMANCE - 性能优化
+   ============================================ */
+@media (max-width: 768px) {
+  /* GPU 加速 */
+  .mobile-gpu-accelerate {
+    transform: translateZ(0) !important;
+    will-change: transform !important;
+  }
+
+  /* 优化渲染 */
+  .mobile-optimize-render {
+    contain: layout style paint !important;
+  }
+
+  /* 图片懒加载优化 */
+  .mobile-image-lazy {
+    content-visibility: auto !important;
+  }
+
+  /* 减少重绘 */
+  .mobile-reduce-repaint {
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY - 无障碍优化
+   ============================================ */
+@media (max-width: 768px) {
+  /* 增大触摸目标 */
+  .mobile-touch-target {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* 焦点可见 */
+  .mobile-focus-visible:focus-visible {
+    outline: 2px solid #00a4e4 !important;
+    outline-offset: 2px !important;
+  }
+
+  /* 跳过导航链接 */
+  .mobile-skip-link {
+    position: absolute !important;
+    top: -40px !important;
+    left: 0 !important;
+    background: #00a4e4 !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    text-decoration: none !important;
+    z-index: 100 !important;
+  }
+
+  .mobile-skip-link:focus {
+    top: 0 !important;
+  }
+}
+
+/* ============================================
+   SAFE AREAS - 安全区域（刘海屏适配）
+   ============================================ */
+@media (max-width: 768px) {
+  /* 顶部安全区域 */
+  .mobile-safe-top {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  /* 底部安全区域 */
+  .mobile-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  /* 左侧安全区域 */
+  .mobile-safe-left {
+    padding-left: env(safe-area-inset-left) !important;
+  }
+
+  /* 右侧安全区域 */
+  .mobile-safe-right {
+    padding-right: env(safe-area-inset-right) !important;
+  }
+
+  /* 全部安全区域 */
+  .mobile-safe-all {
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    padding-left: env(safe-area-inset-left) !important;
+    padding-right: env(safe-area-inset-right) !important;
+  }
+}
+
+/* ============================================
+   END OF MOBILE STYLES
+   ============================================ */
+

@@ -18,34 +18,32 @@ class FAQService:
     async def create_faq(db: AsyncSession, faq_data: FAQCreate) -> FAQ:
         """
         创建 FAQ
-        
+
         Args:
             db: 数据库会话
             faq_data: FAQ 创建数据
-            
+
         Returns:
             创建的 FAQ 对象
         """
-        # 将关键词列表转换为逗号分隔的字符串（SQLite 兼容）
-        keywords_str = ",".join(faq_data.keywords) if faq_data.keywords else ""
-        
         faq = FAQ(
             id=str(uuid.uuid4()),
-            question=faq_data.question,
-            answer=faq_data.answer,
-            keywords=keywords_str,
-            category=faq_data.category,
+            question_zh=faq_data.question_zh,
+            question_en=faq_data.question_en,
+            answer_zh=faq_data.answer_zh,
+            answer_en=faq_data.answer_en,
+            keywords=faq_data.keywords,  # PostgreSQL array
             priority=faq_data.priority,
             is_active=faq_data.is_active,
             usage_count=0,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
-        
+
         db.add(faq)
         await db.commit()
         await db.refresh(faq)
-        
+
         return faq
     
     @staticmethod
@@ -70,40 +68,38 @@ class FAQService:
         db: AsyncSession,
         page: int = 1,
         page_size: int = 20,
-        category: Optional[str] = None,
         is_active: Optional[bool] = None,
         search: Optional[str] = None
     ) -> Tuple[List[FAQ], int]:
         """
         获取 FAQ 列表（分页）
-        
+
         Args:
             db: 数据库会话
             page: 页码
             page_size: 每页数量
-            category: 分类过滤
             is_active: 状态过滤
             search: 搜索关键词
-            
+
         Returns:
             (FAQ 列表, 总数)
         """
         # 构建查询
         query = select(FAQ)
-        
+
         # 应用过滤
         filters = []
-        if category:
-            filters.append(FAQ.category == category)
         if is_active is not None:
             filters.append(FAQ.is_active == is_active)
         if search:
             search_pattern = f"%{search}%"
             filters.append(
                 or_(
-                    FAQ.question.ilike(search_pattern),
-                    FAQ.answer.ilike(search_pattern),
-                    FAQ.keywords.ilike(search_pattern)
+                    FAQ.question_zh.ilike(search_pattern),
+                    FAQ.question_en.ilike(search_pattern),
+                    FAQ.answer_zh.ilike(search_pattern),
+                    FAQ.answer_en.ilike(search_pattern),
+                    FAQ.keywords.any(search)  # PostgreSQL array contains
                 )
             )
         
@@ -193,34 +189,38 @@ class FAQService:
     async def search_faqs(
         db: AsyncSession,
         query: str,
-        limit: int = 5
+        limit: int = 5,
+        language: str = "zh"
     ) -> List[Dict]:
         """
         搜索 FAQ（用于 RAG）
-        
+
         Args:
             db: 数据库会话
             query: 搜索查询
             limit: 返回数量限制
-            
+            language: 语言代码 (zh/en)
+
         Returns:
             FAQ 搜索结果列表
         """
         # 提取查询中的关键词
         keywords = query.lower().split()
-        
+
         # 构建搜索条件
         search_conditions = []
         for keyword in keywords:
             pattern = f"%{keyword}%"
             search_conditions.append(
                 or_(
-                    FAQ.question.ilike(pattern),
-                    FAQ.answer.ilike(pattern),
-                    FAQ.keywords.ilike(pattern)
+                    FAQ.question_zh.ilike(pattern),
+                    FAQ.question_en.ilike(pattern),
+                    FAQ.answer_zh.ilike(pattern),
+                    FAQ.answer_en.ilike(pattern),
+                    FAQ.keywords.any(keyword)  # PostgreSQL array contains
                 )
             )
-        
+
         # 查询活跃的 FAQ
         sql_query = select(FAQ).where(
             and_(
@@ -231,49 +231,58 @@ class FAQService:
             FAQ.priority.desc(),
             FAQ.usage_count.desc()
         ).limit(limit)
-        
+
         result = await db.execute(sql_query)
         faqs = result.scalars().all()
-        
+
         # 转换为字典格式
         results = []
         for faq in faqs:
             # 计算相关性分数（简单实现）
-            relevance_score = FAQService._calculate_relevance(query, faq)
-            
+            relevance_score = FAQService._calculate_relevance(query, faq, language)
+
+            # 根据语言选择问题和答案
+            question = faq.question_zh if language == "zh" else faq.question_en
+            answer = faq.answer_zh if language == "zh" else faq.answer_en
+
             results.append({
                 "id": faq.id,
-                "question": faq.question,
-                "answer": faq.answer,
-                "category": faq.category,
+                "question": question,
+                "answer": answer,
                 "priority": faq.priority,
                 "relevance_score": relevance_score
             })
-        
+
         # 按相关性分数排序
         results.sort(key=lambda x: x["relevance_score"], reverse=True)
-        
+
         return results
     
     @staticmethod
-    def _calculate_relevance(query: str, faq: FAQ) -> float:
+    def _calculate_relevance(query: str, faq: FAQ, language: str = "zh") -> float:
         """
         计算相关性分数
-        
+
         Args:
             query: 搜索查询
             faq: FAQ 对象
-            
+            language: 语言代码 (zh/en)
+
         Returns:
             相关性分数（0-1）
         """
         query_lower = query.lower()
-        question_lower = faq.question.lower()
-        answer_lower = faq.answer.lower()
-        keywords_lower = faq.keywords.lower()
-        
+
+        # 根据语言选择问题和答案
+        question = faq.question_zh if language == "zh" else faq.question_en
+        answer = faq.answer_zh if language == "zh" else faq.answer_en
+
+        question_lower = question.lower()
+        answer_lower = answer.lower()
+        keywords_lower = [kw.lower() for kw in faq.keywords] if faq.keywords else []
+
         score = 0.0
-        
+
         # 完全匹配问题（最高分）
         if query_lower == question_lower:
             score += 1.0
@@ -283,26 +292,26 @@ class FAQService:
         # 查询包含在问题中
         elif question_lower in query_lower:
             score += 0.6
-        
+
         # 关键词匹配
         query_words = set(query_lower.split())
-        keyword_list = set(keywords_lower.split(","))
-        
-        if query_words & keyword_list:  # 有交集
-            overlap = len(query_words & keyword_list)
+        keyword_set = set(keywords_lower)
+
+        if query_words & keyword_set:  # 有交集
+            overlap = len(query_words & keyword_set)
             score += 0.3 * (overlap / len(query_words))
-        
+
         # 答案包含查询
         if query_lower in answer_lower:
             score += 0.2
-        
+
         # 优先级加成
         score += (faq.priority / 100) * 0.1
-        
+
         # 使用次数加成
         if faq.usage_count > 0:
             score += min(faq.usage_count / 100, 0.1)
-        
+
         return min(score, 1.0)  # 限制在 0-1 之间
     
     @staticmethod
