@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 
 export function BusinessPage() {
   const { t, language } = useLanguage();
+  const isRTL = language === 'ar';
 
   const newEconomyCategories = [
     {
@@ -64,19 +65,19 @@ export function BusinessPage() {
     <div className="min-h-screen bg-[#0a2540] pt-32">
       {/* Hero Section */}
       <section className="py-24 px-8 border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto">
-          <motion.h1 
+        <div className="max-w-[1440px] mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl font-light text-white mb-6"
           >
             {t('business.hero.title')}
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-gray-300 max-w-3xl"
+            className={`text-xl text-gray-300 max-w-3xl ${isRTL ? 'text-right' : 'text-left md:text-justify'}`}
           >
             {t('business.hero.subtitle')}
           </motion.p>
@@ -89,7 +90,7 @@ export function BusinessPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* New Economy Column */}
             <div>
-              <div className="mb-12">
+              <div className="mb-12 h-[180px] flex flex-col justify-end" dir={isRTL ? 'rtl' : 'ltr'}>
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.neweconomy.title')}</h2>
               </div>
 
@@ -128,24 +129,31 @@ export function BusinessPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="relative h-[280px] flex flex-col justify-between p-8 text-white">
+                      <div className="relative h-[280px] flex flex-col justify-between p-8 text-white" dir={isRTL ? 'rtl' : 'ltr'}>
                         <div className="flex items-start justify-between">
-                          <div 
+                          <div
                             className="w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:scale-110"
                             style={{ background: 'rgba(255, 255, 255, 0.2)' }}
                           >
                             <Icon className="w-7 h-7" />
                           </div>
-                          <div className="text-right">
+                          <div className={isRTL ? 'text-left' : 'text-right'}>
                             <p className="text-sm opacity-80 mb-1">{language.startsWith('zh') ? '预计年化收益' : 'Expected Annual Return'}</p>
                             <p className="text-2xl font-light">{category.returnRange}</p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <h3 className="text-2xl font-light mb-3">{category.title}</h3>
-                          <p className="text-white/90 mb-4">{category.description}</p>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="text-white/90 mb-4 space-y-1">
+                            {category.description.split('\n').map((line, i) => (
+                              <div key={i} className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                <span className="mt-1.5 text-xs">•</span>
+                                <p className={`flex-1 leading-relaxed m-0 ${isRTL ? 'text-right' : 'text-left md:text-justify'}`}>{line.replace(/^[•\-]\s*/, '')}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <span className="text-sm">{language.startsWith('zh') ? '了解更多' : 'Learn more'}</span>
                             <ArrowRight className="w-4 h-4" />
                           </div>
@@ -159,7 +167,7 @@ export function BusinessPage() {
 
             {/* Traditional Industries Column */}
             <div>
-              <div className="mb-12">
+              <div className="mb-12 h-[180px] flex flex-col justify-end" dir={isRTL ? 'rtl' : 'ltr'}>
                 <h2 className="text-4xl font-light text-white mb-3">{t('business.traditional.title')}</h2>
               </div>
 
@@ -198,24 +206,31 @@ export function BusinessPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="relative h-[280px] flex flex-col justify-between p-8 text-white">
+                      <div className="relative h-[280px] flex flex-col justify-between p-8 text-white" dir={isRTL ? 'rtl' : 'ltr'}>
                         <div className="flex items-start justify-between">
-                          <div 
+                          <div
                             className="w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:scale-110"
                             style={{ background: 'rgba(255, 255, 255, 0.2)' }}
                           >
                             <Icon className="w-7 h-7" />
                           </div>
-                          <div className="text-right">
+                          <div className={isRTL ? 'text-left' : 'text-right'}>
                             <p className="text-sm opacity-80 mb-1">{language.startsWith('zh') ? '预计年化收益' : 'Expected Annual Return'}</p>
                             <p className="text-2xl font-light">{category.returnRange}</p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <h3 className="text-2xl font-light mb-3">{category.title}</h3>
-                          <p className="text-white/90 mb-4">{category.description}</p>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="text-white/90 mb-4 space-y-1">
+                            {category.description.split('\n').map((line, i) => (
+                              <div key={i} className={`flex items-start gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                <span className="mt-1.5 text-xs">•</span>
+                                <p className={`flex-1 leading-relaxed m-0 ${isRTL ? 'text-right' : 'text-left md:text-justify'}`}>{line.replace(/^[•\-]\s*/, '')}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <span className="text-sm">{language.startsWith('zh') ? '了解更多' : 'Learn more'}</span>
                             <ArrowRight className="w-4 h-4" />
                           </div>
@@ -244,7 +259,7 @@ export function BusinessPage() {
               <h3 className="text-3xl font-light text-white mb-6">
                 {t('business.strategy.title')}
               </h3>
-              <p className="text-gray-300 leading-relaxed">
+              <p className="text-gray-300 leading-relaxed text-left md:text-justify">
                 {t('business.strategy.desc')}
               </p>
             </motion.div>
@@ -260,7 +275,7 @@ export function BusinessPage() {
               <h3 className="text-3xl font-light text-white mb-6">
                 {t('business.value.title')}
               </h3>
-              <p className="text-gray-300 leading-relaxed">
+              <p className="text-gray-300 leading-relaxed text-left md:text-justify">
                 {t('business.value.desc')}
               </p>
             </motion.div>
