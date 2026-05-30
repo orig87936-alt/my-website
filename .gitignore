@@ -22,6 +22,12 @@ build
 !.vscode/extensions.json
 .idea
 .DS_Store
+.amazonq/
+.claude/
+.cursor/
+.factory/
+.serena/
+.venv-serena/
 *.suo
 *.ntvs*
 *.njsproj
@@ -86,3 +92,5 @@ new_article.json
 article_data.json
 article_content_raw.txt
 translation_result.json
+nul
+extracted_images/
